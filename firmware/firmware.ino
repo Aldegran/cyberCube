@@ -9,6 +9,7 @@ const char* password = "0631603132";
 
 TaskHandle_t Task0;
 TaskHandle_t Task1;
+TaskHandle_t Task2;
 
 //QueueHandle_t queue;
 
@@ -27,9 +28,29 @@ void setup() {
   xTaskCreatePinnedToCore(taskCore0, "Core0", 10000, NULL, 0, &Task0, 0);
   delay(500);
   xTaskCreatePinnedToCore(taskCore1, "Core1", 10000, NULL, 0, &Task1, 1);
+  delay(500);
+  xTaskCreatePinnedToCore(taskCore2, "Core2", 10000, NULL, 0, &Task2, 0);
 }
 
-void taskCore0(void* parameter) { //wifi, display, mp3
+void taskCore2(void* parameter) { //wifi, display, rfid
+  Serial.print("Task2 running on core ");
+  Serial.println(xPortGetCoreID());
+  SPI.begin();
+  //RFIDSetup();
+  displaySetup();
+  for (;;) {
+    //RFIDLoop();
+    displayLoop();
+    /*for (byte i = 0; i < 3; i++) {
+      if (encoderData.delta[i]) {
+        Serial.printf("Encoder %d = %d\r\n", i, encoderData.value[i]);
+        encoderData.delta[i] = 0;
+      }
+    }*/
+  }
+}
+
+void taskCore0(void* parameter) { //wifi
   Serial.print("Task0 running on core ");
   Serial.println(xPortGetCoreID());
   WiFi.mode(WIFI_STA);
@@ -71,18 +92,8 @@ void taskCore0(void* parameter) { //wifi, display, mp3
       Serial.println("Ready");
       Serial.print("IP address: ");
       Serial.println(WiFi.localIP());
-      SPI.begin();
-      //RFIDSetup();
-      displaySetup();
       for (;;) {
-        //RFIDLoop();
         ArduinoOTA.handle();
-        for (byte i = 0; i < 3; i++) {
-          if (encoderData.delta[i]) {
-            Serial.printf("Encoder %d = %d\r\n", i, encoderData.value[i]);
-            encoderData.delta[i] = 0;
-          }
-        }
       }
 }
 
@@ -90,9 +101,9 @@ void taskCore1(void* parameter) { //encoder, led, WS
   Serial.print("Task1 running on core ");
   Serial.println(xPortGetCoreID());
   encoderSetup();
-  setupExtender();
+  //setupExtender();
   ledSetup();
-  soundSetup();
+  //soundSetup();
   for (;;) {
     encoderLoop();
     //extenderLoop();
@@ -103,4 +114,12 @@ void taskCore1(void* parameter) { //encoder, led, WS
 
 void loop() {
   vTaskDelete(NULL);
+}
+
+int userColor(byte n) {
+  if (n == 44)return 0;
+  byte c = n % 7;
+  if (c == 6)return n / 7 + 1;
+  else if (c < 2) return n / 7;
+  return 6;
 }

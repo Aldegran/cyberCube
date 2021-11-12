@@ -16,7 +16,7 @@ ESP32Encoder encoder2;
 
 extern SettingsStruct encoderData;
 int currentEncoder[3] = { 0,0,0 };
-int encoderLimit[3][2] = { {-100, 100}, {-100, 100}, {0, 44} };
+int encoderLimit[3][2] = { {-140, 140}, {-140, 140}, {0, 44} };
 
 void encoderSetup() {
   ESP32Encoder::useInternalWeakPullResistors = UP;
