@@ -4,6 +4,8 @@
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 extern SettingsStruct encoderData;
 extern int userColor(byte n);
+extern byte gameMode;
+extern byte mode;
 
 byte n = 0;
 uint32_t ledColors[9];
@@ -19,11 +21,17 @@ void ledSetup() {
   ledColors[8] = strip.Color(50, 50, 50);
   strip.begin();
   strip.setBrightness(100);
-  showUser(n, false);
-  setleds();
+  //showUser(n, false);
+  //setleds();
   strip.show();
   timers[1] = millis();
 }
+
+void eraseLeds() {
+  for (byte i = 0; i < LED_COUNT;i++) strip.setPixelColor(i, 0);
+  strip.show();
+}
+
 void setleds() {
   for (byte i = 0; i < 6;i++) {
     strip.setPixelColor(tn(i * 7 - 1), ledColors[i + 1]);
@@ -45,7 +53,7 @@ byte tn(int n) {
   return n;
 }
 void ledLoop() {
-  if (millis() - timers[1] > 10) {
+  if (millis() - timers[1] > 10 && mode == 1 && gameMode == 2) {
     if (n != encoderData.value[2]) {
       showUser(n, true);
       n = encoderData.value[2];

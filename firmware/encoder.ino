@@ -12,7 +12,7 @@ ESP32Encoder encoder2;
 
 #define PIN_ENCODER2_A 15
 #define PIN_ENCODER2_B 3
-#define PIN_ENCODER2_BUT 35
+#define PIN_ENCODER2_BUT 39
 
 extern SettingsStruct encoderData;
 int currentEncoder[3] = { 0,0,0 };
@@ -26,6 +26,7 @@ void encoderSetup() {
   encoder0.clearCount();
   encoder1.clearCount();
   encoder2.clearCount();
+  //pinMode(PIN_ENCODER2_BUT, INPUT);
   //encoder0.pauseCount();
   //encoder1.pauseCount();
 }
@@ -65,4 +66,8 @@ void encoderLoop() {
       }
     }// else encoderData.delta[i] = 0;
   }
+  /*if (digitalRead(PIN_ENCODER2_BUT)) {
+    Serial.println("-");
+  } else Serial.println("*");
+  delay(100);*/
 }

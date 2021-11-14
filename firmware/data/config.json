@@ -1,0 +1,13 @@
+{
+  "lineColorChanceUp": 3,
+  "lineChaosUp": 10,
+  "lineChanceUp": 4,
+  "lineCycleDown": 1,
+  "userRadiusDown": 1,
+  "lineStepUp": 1,
+  "levels": 5,
+  "ssid": "Mysterious",
+  "password": "0631603132",
+  "ap_ssid": "CyberBox",
+  "ap_password": "0631603132"
+}
