@@ -21,8 +21,8 @@ void ledSetup() {
   ledColors[8] = strip.Color(50, 50, 50);
   strip.begin();
   strip.setBrightness(100);
-  //showUser(n, false);
-  //setleds();
+  showUser(n, false);
+  setleds();
   strip.show();
   timers[1] = millis();
 }

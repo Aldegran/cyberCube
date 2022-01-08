@@ -43,14 +43,27 @@ int randomLimit(int value, int randomValue, int minValue, int maxValue) {
   value = max(value, minValue);
   return value;
 }
-
 void displaySetup() {
+  pinMode(LCD_DC, OUTPUT);
+  //pinMode(LCD_BL, OUTPUT);
+  //ledcSetup(0, 5000, 8);
+  //ledcAttachPin(LCD_BL, 0);
+  //analogWrite(LCD_BL, 0);
+  Waveshield.useExtender(
+    setLedRes,
+    resetLedRes,
+    setLedDC,
+    resetLedDC,
+    emptyFunction,
+    emptyFunction
+  );
+  setLedCS();
   if (!Waveshield.begin()) {
     Serial.println("Display init\t[FAIL]");
     return;
   }
   gameMode = 0;
-  mode = 0;
+  mode = 1;
   delay(500);
   Serial.println("Display init\t[OK]");
   tft.setRotation(2);
@@ -59,6 +72,7 @@ void displaySetup() {
   tft.setTextColor(YELLOW, BLACK);
   tft.setCursor(1, 14);
   tft.setTextSize(1);
+  resetLedCS();
 }
 void showQR(char* qrName) {
   tft.fillRoundRect(0, 0, WIDTH, WIDTH, 15, WHITE);

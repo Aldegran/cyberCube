@@ -1,16 +1,16 @@
 #include "PCF8575.h"
 
 PCF8575 EXT_Led0(0x20);
-PCF8575 EXT_Button(0x21);
+PCF8575 EXT_Serv(0x21);
 PCF8575 EXT_Led1(0x22);
 PCF8575 EXT_Led2(0x23);
 PCF8575 EXT_Led3(0x24);
 extern unsigned long timers[2];
 unsigned int currentButtonValue = 0;
 byte currentButton = 0;
-const int EXT_BUTTON_INT_PIN = 15;
+//const int EXT_BUTTON_INT_PIN = 15;
 unsigned int buttonValues[12] = { 65534, 65533, 65531, 65527, 65519, 65503, 65471, 65407, 65279, 65023, 64511, 63487 };
-byte inited[5] = { false,false,false,false,false };
+byte inited[6] = { false,false,false,false,false, false };
 
 volatile bool EXTButtonFlag = false;
 
@@ -55,6 +55,15 @@ void setupExtender() {
     inited[4] = true;
     Serial.println("EXT_Led3 init\t[OK]");
   }
+  if (!EXT_Serv.begin()) {
+    Serial.println("EXT_Serv init\t[FAIL]");
+  } else if (!EXT_Serv.isConnected()) {
+    Serial.println("EXT_Serv connect\t[FAIL]");
+  } else {
+    EXT_Serv.write16(0xFFFF);
+    inited[5] = true;
+    Serial.println("EXT_Serv init\t[OK]");
+  }
   /*if (!EXT_Button.begin()){
     Serial.println("EXT_Button init\t[FAIL]");
   } else if (!EXT_Button.isConnected()){
@@ -66,7 +75,7 @@ void setupExtender() {
   }*/
   timers[0] = millis();
 }
-byte t[3] = { 0,0,0 };
+byte t[5] = { 0,0,0,0,0 };
 void extenderLoop() {
   if (millis() - timers[0] > 10) {
     if (inited[0])EXT_Led0.write16(random(0xFFFF));
@@ -79,18 +88,19 @@ void extenderLoop() {
       EXT_Led1.write16(r);
     }
     if (inited[3]) {
-      t[1]++;
-      if (t[0] % 10 == 0)t[2] = random(0xff);
-      int r = t[1];
+      t[3]++;
+      if (t[0] % 10 == 0)t[4] = random(0xff);
+      int r = t[3];
       r = r << 8;
-      r += t[2];
+      r += t[4];
       EXT_Led2.write16(r);
     }
     if (inited[4])EXT_Led3.write16(random(0xFFFF));
+    //if (inited[5])EXT_Serv.write16(random(0xFFFF));
     timers[0] = millis();
     t[0]++;
   }
-  if (inited[1] && EXTButtonFlag) {
+  /*if (inited[1] && EXTButtonFlag) {
     EXTButtonFlag = false;
     unsigned int cb = EXT_Button.read16();
     if (cb != currentButtonValue) {
@@ -106,5 +116,36 @@ void extenderLoop() {
         Serial.printf("Button\t%d\r\n", currentButton);
       }
     }
-  }
+  }*/
+}
+
+void setLedRes() {
+  //if (inited[5])EXT_Serv.write(0, false);
+  digitalWrite(LCD_RST, LOW);
+}
+void resetLedRes() {
+  //if (inited[5])EXT_Serv.write(0, true);
+  digitalWrite(LCD_RST, HIGH);
+}
+void setLedDC() {
+  digitalWrite(LCD_DC, LOW);
+}
+void resetLedDC() {
+  digitalWrite(LCD_DC, HIGH);
+}
+void setLedCS() {
+  if (inited[5])EXT_Serv.write(0, false);
+}
+void resetLedCS() {
+  if (inited[5])EXT_Serv.write(0, true);
+}
+
+void setRFIDCS() {
+  if (inited[5])EXT_Serv.write(1, false);
+  //digitalWrite(2, LOW);
+}
+
+void resetRFIDCS() {
+  if (inited[5])EXT_Serv.write(1, true);
+  //digitalWrite(2, HIGH);
 }

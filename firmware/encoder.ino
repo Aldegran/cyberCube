@@ -11,8 +11,8 @@ ESP32Encoder encoder2;
 #define PIN_ENCODER1_B 25
 
 #define PIN_ENCODER2_A 15
-#define PIN_ENCODER2_B 3
-#define PIN_ENCODER2_BUT 39
+#define PIN_ENCODER2_B 4
+#define PIN_ENCODER2_BUT 5
 
 extern SettingsStruct encoderData;
 int currentEncoder[3] = { 0,0,0 };
@@ -26,7 +26,7 @@ void encoderSetup() {
   encoder0.clearCount();
   encoder1.clearCount();
   encoder2.clearCount();
-  //pinMode(PIN_ENCODER2_BUT, INPUT);
+  //pinMode(PIN_ENCODER2_BUT, INPUT_PULLUP);
   //encoder0.pauseCount();
   //encoder1.pauseCount();
 }
@@ -51,7 +51,7 @@ void encoderLoop() {
   currentEncoder[2] = encoder2.getCount();
   for (byte i = 0; i < 3; i++) {
     if (currentEncoder[i] != encoderData.value[i]) {
-      //Serial.printf("%d = %d\r\n", i, currentEncoder[i]);
+      Serial.printf("%d = %d\r\n", i, currentEncoder[i]);
       if (currentEncoder[i] < encoderLimit[i][0]) {
         encoderData.value[i] = encoderLimit[i][i == 2 ? 1 : 0];
         setCount(i, encoderData.value[i]);
@@ -66,8 +66,8 @@ void encoderLoop() {
       }
     }// else encoderData.delta[i] = 0;
   }
-  /*if (digitalRead(PIN_ENCODER2_BUT)) {
+  /*if (!digitalRead(PIN_ENCODER2_BUT)) {
     Serial.println("-");
-  } else Serial.println("*");
+  }
   delay(100);*/
 }

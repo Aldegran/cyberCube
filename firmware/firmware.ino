@@ -7,6 +7,10 @@
 #include <ArduinoOTA.h>
 #include <SPIFFSEditor.h>
 
+#define LCD_DC 14
+#define LCD_BL 13
+#define LCD_RST 12
+
 AsyncWebServer HTTPserver(80);
 
 String ssid = "MYSTERIOUS-NEW";
@@ -107,10 +111,11 @@ void taskCore2(void* parameter) { //wifi, display, rfid
   RFIDSettings.userRadius = 15;
   RFIDSettings.lineCycle = 6;
   RFIDSettings.lineStep = 2;
-  //RFIDSetup();
+  RFIDSetup();
   displaySetup();
+  setLedCS();
   for (;;) {
-    //RFIDLoop();
+    RFIDLoop();
     displayLoop();
     /*for (byte i = 0; i < 3; i++) {
       if (encoderData.delta[i]) {
@@ -180,12 +185,12 @@ void taskCore1(void* parameter) { //encoder, led, WS
   Serial.print("Task1 running on core ");
   Serial.println(xPortGetCoreID());
   encoderSetup();
-  //setupExtender();
+  setupExtender();
   ledSetup();
   //soundSetup();
   for (;;) {
     encoderLoop();
-    //extenderLoop();
+    extenderLoop();
     ledLoop();
     //soundLoop();
   }
