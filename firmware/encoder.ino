@@ -71,3 +71,7 @@ void encoderLoop() {
   }
   delay(100);*/
 }
+
+bool checkButton() {
+  return !digitalRead(PIN_ENCODER2_BUT);
+}

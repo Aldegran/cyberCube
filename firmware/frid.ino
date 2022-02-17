@@ -13,8 +13,7 @@ MFRC522::MIFARE_Key key;
 void RFIDSetup() {
   //SPI.begin();        // Init SPI bus
   pinMode(SS_PIN, OUTPUT);
-  resetLedCS();
-  //setRFIDCS();
+  setRFIDCS();
   mfrc522.setExt(
     setRFIDCS,
     resetRFIDCS,
@@ -22,36 +21,34 @@ void RFIDSetup() {
     emptyFunction
   );
   mfrc522.PCD_Init(); // Init MFRC522 card
-
+  delay(4);
   // Prepare the key (used both as key A and as key B)
   // using FFFFFFFFFFFFh which is the default at chip delivery from the factory
   for (byte i = 0; i < 6; i++) {
     key.keyByte[i] = 0xFF;
   }
-  if (mfrc522.PCD_GetAntennaGain()) {
-    Serial.println("RFID init\t[OK]");
-  } else Serial.println("RFID init\t[FAIL]");
-  //resetRFIDCS();
-  setLedCS();
+  mfrc522.PCD_SetAntennaGain(mfrc522.RxGain_max);
+  //if (mfrc522.PCD_GetAntennaGain()) {
+    Serial.print(F("RFID init\t[OK]\t"));
+    mfrc522.PCD_DumpVersionToSerial();
+  //} else Serial.println("RFID init\t[FAIL]");
+  resetRFIDCS();
 }
 
 /**
  * Main loop.
  */
 void RFIDLoop() {
-  resetLedCS();
-  //setRFIDCS();
+  setRFIDCS();
   // Reset the loop if no new card present on the sensor/reader. This saves the entire process when idle.
   if (!mfrc522.PICC_IsNewCardPresent()) {
-    //resetRFIDCS();
-    setLedCS();
+    resetRFIDCS();
     return;
   }
 
   // Select one of the cards
   if (!mfrc522.PICC_ReadCardSerial()) {
-    //resetRFIDCS();
-    setLedCS();
+    resetRFIDCS();
     return;
   }
 
@@ -68,8 +65,7 @@ void RFIDLoop() {
     && piccType != MFRC522::PICC_TYPE_MIFARE_1K
     && piccType != MFRC522::PICC_TYPE_MIFARE_4K) {
     Serial.println(F("This sample only works with MIFARE Classic cards."));
-    //resetRFIDCS();
-    setLedCS();
+    resetRFIDCS();
     return;
   }
 
@@ -94,8 +90,7 @@ void RFIDLoop() {
   if (status != MFRC522::STATUS_OK) {
     Serial.print(F("PCD_Authenticate() failed: "));
     Serial.println(mfrc522.GetStatusCodeName(status));
-    //resetRFIDCS();
-    setLedCS();
+    resetRFIDCS();
     return;
   }
 
@@ -174,8 +169,7 @@ void RFIDLoop() {
   mfrc522.PICC_HaltA();
   // Stop encryption on PCD
   mfrc522.PCD_StopCrypto1();
-  //resetRFIDCS();
-  setLedCS();
+  resetRFIDCS();
 }
 
 /**

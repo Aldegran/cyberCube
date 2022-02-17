@@ -2,7 +2,7 @@
 #define WIDTH 320
 #define HEIGHT 240
 #define HEIGHT2 HEIGHT/2
-#define WIDTH2 WIDTH/2
+#define WIDTH2 WIDTH-HEIGHT/2
 
 float gr = PI / 180;
 
@@ -83,6 +83,7 @@ void redrawAllelements() {
 }
 
 void displayLoop() {
+  displayButtons();
   if (!buttons.mode || buttons.mode == 10 || !displayInited) {
     timers[1] = millis();
     return;
@@ -107,4 +108,11 @@ void displayLoop() {
       ledcSetup(0, BUZ_FR, 10);
     }
   }
+}
+
+void displayButtons() {
+  ucg.setColor(0, 0, buttons.a ? 255 : 0);
+  ucg.drawBox(10, 10, 20, 20);
+  ucg.setColor(0, buttons.b ? 255 : 0, 0);
+  ucg.drawBox(40, 10, 20, 20);
 }

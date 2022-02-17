@@ -26,6 +26,7 @@ extern SettingsStruct encoderData;
 extern RFIDSettingsStruct RFIDSettings;
 extern byte gameMode;
 extern byte mode;
+extern unsigned long timers[3];
 extern void eraseLeds();
 extern void setleds();
 extern int userColor(byte n);
@@ -45,10 +46,6 @@ int randomLimit(int value, int randomValue, int minValue, int maxValue) {
 }
 void displaySetup() {
   pinMode(LCD_DC, OUTPUT);
-  //pinMode(LCD_BL, OUTPUT);
-  //ledcSetup(0, 5000, 8);
-  //ledcAttachPin(LCD_BL, 0);
-  //analogWrite(LCD_BL, 0);
   Waveshield.useExtender(
     setLedRes,
     resetLedRes,
@@ -58,20 +55,21 @@ void displaySetup() {
     emptyFunction
   );
   setLedCS();
-  if (!Waveshield.begin()) {
-    Serial.println("Display init\t[FAIL]");
+  if (!Waveshield.begin(1)) {
+    Serial.println(F("Display init\t[FAIL]"));
     return;
   }
   gameMode = 0;
   mode = 1;
   delay(500);
-  Serial.println("Display init\t[OK]");
+  Serial.println(F("Display init\t[OK]"));
   tft.setRotation(2);
   tft.setFont(&Aurebesh10pt7b);
   tft.fillScreen(BLACK);
   tft.setTextColor(YELLOW, BLACK);
   tft.setCursor(1, 14);
   tft.setTextSize(1);
+  Waveshield.setScreenBrightness(0xFF);
   resetLedCS();
 }
 void showQR(char* qrName) {
@@ -108,13 +106,32 @@ void drawFileMC(char* qrName, int w, int h, byte zoom, int x, int y, int color, 
 
 void displayLoop() {
   switch (mode) {
-  case 0:
+  /*case 0:
     showQR("code1.qr");
+    break;*/
+  case GAME_MODE_CAPSULE_GAME:
+    //displayGame();
+    delay(3000);
+    mode = GAME_MODE_CAPSULE_GAME_OK;
+    statusChanged();
     break;
-  case 1:
-    displayGame();
+  case GAME_MODE_WAIT_ANIMATION:
+  ///
+    delay(3000);
+    mode = GAME_MODE_WAIT_CAPSULE;
+    statusChanged();
     break;
-
+  case GAME_MODE_CONNECT_LCD:
+  ///
+    delay(3000);
+    timers[2] = millis();
+    mode = GAME_MODE_WAIT_BUTTON;
+    statusChanged();
+    break;
+  case GAME_MODE_CAPSULE_READ:
+    delay(3000);
+    mode = GAME_MODE_CAPSULE_GAME;
+    statusChanged();
   default:
     break;
   }

@@ -210,7 +210,6 @@ void updateMode() {
     }
   }
   Serial.printf(">\t%d\t%d\t%d\r\n", buttons.a, buttons.b, buttons.mode);
-
   switch (buttons.mode) {
   case 1:
     buttons.speed = 0;
@@ -255,7 +254,7 @@ void updateMode() {
 
   default:
     buttons.speed = 0;
-    digitalWrite(LCD_BL, LOW);
+    digitalWrite(LCD_BL, HIGH);
     off();
     break;
   }

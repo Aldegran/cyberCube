@@ -7,9 +7,28 @@
 #include <ArduinoOTA.h>
 #include <SPIFFSEditor.h>
 
+#define IDLE_TIME 300000
+
 #define LCD_DC 14
 #define LCD_BL 13
 #define LCD_RST 12
+
+#define GAME_MODE_INIT 0
+#define GAME_MODE_START 1
+#define GAME_MODE_CONNECT_TOP 2
+#define GAME_MODE_CONNECT_BOX 3
+#define GAME_MODE_CONNECT_LCD 4
+#define GAME_MODE_WAIT_BUTTON 5
+#define GAME_MODE_WAIT_ANIMATION 14
+#define GAME_MODE_WAIT_CAPSULE 6
+#define GAME_MODE_CAPSULE_BEGIN 7
+#define GAME_MODE_CAPSULE_END 8
+#define GAME_MODE_CAPSULE_READ 9
+#define GAME_MODE_CAPSULE_FAIL_READ 10
+#define GAME_MODE_CAPSULE_GAME 11
+#define GAME_MODE_CAPSULE_GAME_FAIL 12
+#define GAME_MODE_CAPSULE_GAME_OK 13
+#define GAME_MODE_IDLE 15
 
 AsyncWebServer HTTPserver(80);
 
@@ -21,8 +40,7 @@ String ap_password = "";
 TaskHandle_t Task0;
 TaskHandle_t Task1;
 TaskHandle_t Task2;
-
-//QueueHandle_t queue;
+TaskHandle_t Task3;
 
 typedef struct {
   int value[3];
@@ -55,16 +73,26 @@ typedef struct {
 } __attribute__((packed, aligned(1))) RFIDSettingsStruct;
 RFIDSettingsStruct RFIDSettings;
 
+typedef struct {
+  byte cylinderTop;
+  byte cylinderBottom;
+  byte cylinderStatus;
+  byte cylinderConnection;
+  byte LCDConnection;
+  byte extendersConnection;
+} __attribute__((packed, aligned(1))) ConnectorsStatusStruct;
+ConnectorsStatusStruct ConnectorsStatus;
+
 typedef void (*ButtonCallback) ();
-unsigned long timers[2] = { 0, 0 };
+unsigned long timers[3] = { 0, 0, 0 };
 byte gameMode = 0;
-byte mode = 1;
+byte mode = GAME_MODE_INIT;
 
 void emptyFunction() {}
 ButtonCallback BackButtonCallback = emptyFunction;
 
 bool modeAP() {
-  Serial.println("WiFi mode AP\n");
+  Serial.println(F("WiFi mode AP\n"));
   if (ap_ssid.length()) {
     IPAddress apIP(192, 168, 0, 1);
     IPAddress GateWayIP(0, 0, 0, 0);
@@ -78,26 +106,34 @@ bool modeAP() {
 
 void setup() {
   Serial.begin(115200);
-  Serial2.begin(115200);
+  Serial.println(F("======================================================="));
+  //Serial2.begin(115200);
   if (!FSInit()) {
-    Serial.println("An Error has occurred while mounting SPIFFS");
+    Serial.println(F("An Error has occurred while mounting SPIFFS"));
   } else {
-    Serial.println("Load config file");
+    Serial.println(F("Load config file"));
     loadConfig();
   }
-  //queue = xQueueCreate(1, sizeof(SettingsStruct));
+  ConnectorsStatus.cylinderTop = false;
+  ConnectorsStatus.cylinderBottom = false;
+  ConnectorsStatus.cylinderStatus = false;
+  ConnectorsStatus.cylinderConnection = false;
+  ConnectorsStatus.LCDConnection = false;
+  ConnectorsStatus.extendersConnection = false;
   xTaskCreatePinnedToCore(taskCore0, "Core0", 10000, NULL, 0, &Task0, 0);
   delay(500);
   xTaskCreatePinnedToCore(taskCore1, "Core1", 10000, NULL, 0, &Task1, 1);
   delay(500);
   xTaskCreatePinnedToCore(taskCore2, "Core2", 10000, NULL, 0, &Task2, 0);
+  delay(500);
+  xTaskCreatePinnedToCore(taskCore3, "Core3", 10000, NULL, 0, &Task3, 1);
 }
 
-void taskCore2(void* parameter) { //wifi, display, rfid
-  Serial.print("Task2 running on core ");
+void taskCore2(void* parameter) { //display, rfid
+  Serial.print(F("Task2 running on core "));
   Serial.println(xPortGetCoreID());
   SPI.begin();
-  RFIDSettings.lineColorChance[0] = 50;
+  /*RFIDSettings.lineColorChance[0] = 50;
   RFIDSettings.lineColorChance[1] = 50;
   RFIDSettings.lineChance[0] = 10;
   RFIDSettings.lineChance[1] = 10;
@@ -110,13 +146,30 @@ void taskCore2(void* parameter) { //wifi, display, rfid
   RFIDSettings.maxScore = 1000;
   RFIDSettings.userRadius = 15;
   RFIDSettings.lineCycle = 6;
-  RFIDSettings.lineStep = 2;
+  RFIDSettings.lineStep = 2;*/
   RFIDSetup();
-  displaySetup();
-  setLedCS();
+  mode = GAME_MODE_START;
+  statusChanged();
+  //displaySetup();
+  //setLedCS();
   for (;;) {
-    RFIDLoop();
-    displayLoop();
+    if(mode == GAME_MODE_CONNECT_BOX && ConnectorsStatus.LCDConnection){
+      if(ConnectorsStatus.LCDConnection == 2 ){
+        //displaySetup();
+        ConnectorsStatus.LCDConnection = true;
+        mode = GAME_MODE_CONNECT_LCD;
+        statusChanged();
+      }
+    }
+    if( ConnectorsStatus.LCDConnection == true && mode != GAME_MODE_IDLE){
+      displayLoop();
+    }
+    if(mode == GAME_MODE_CAPSULE_END) {
+      //RFIDLoop();
+      delay(3000);
+      mode = GAME_MODE_CAPSULE_READ;
+      statusChanged();
+    }
     /*for (byte i = 0; i < 3; i++) {
       if (encoderData.delta[i]) {
         Serial.printf("Encoder %d = %d\r\n", i, encoderData.value[i]);
@@ -182,17 +235,97 @@ void taskCore0(void* parameter) { //wifi
 }
 
 void taskCore1(void* parameter) { //encoder, led, WS
-  Serial.print("Task1 running on core ");
+  Serial.print(F("Task1 running on core "));
   Serial.println(xPortGetCoreID());
   encoderSetup();
   setupExtender();
   ledSetup();
-  //soundSetup();
   for (;;) {
-    encoderLoop();
-    extenderLoop();
-    ledLoop();
-    //soundLoop();
+    if(mode != GAME_MODE_IDLE) extenderLoop();
+    if(mode == GAME_MODE_START && ConnectorsStatus.cylinderConnection){ // надели верх
+      mode = GAME_MODE_CONNECT_TOP;
+      statusChanged();
+      MIDIPlayRandom();
+    }
+    if(mode == GAME_MODE_CONNECT_TOP){ // подключили верх
+      if(!setupBoxExtenders()) {
+        delay(1000);
+        if(!ConnectorsStatus.cylinderConnection){ // сняли верх
+          mode = GAME_MODE_START;
+          statusChanged();
+        }
+      } else {
+        if(mode!=GAME_MODE_CONNECT_LCD){
+          mode = GAME_MODE_CONNECT_BOX;
+          statusChanged();
+        }
+        cylinderLight(true);
+      }
+    }
+    if(mode == GAME_MODE_WAIT_BUTTON && checkButton()){ // нажали кнопку
+      ledFlash();
+      while(checkButton()) delay(10);
+      mode = GAME_MODE_WAIT_CAPSULE;
+      timers[2] = millis();
+      statusChanged();
+    }
+
+    if(mode == GAME_MODE_WAIT_CAPSULE && ConnectorsStatus.cylinderTop){ // встувили верх капсулы
+      mode = GAME_MODE_CAPSULE_BEGIN;
+      timers[2] = millis();
+      statusChanged();
+    }
+    if(mode == GAME_MODE_CAPSULE_BEGIN && millis() - timers[2] > IDLE_TIME*2){ //долго впихиваем капсулу или передумали
+      mode = GAME_MODE_WAIT_CAPSULE;
+      timers[2] = millis();
+      statusChanged();
+    }
+    if(mode == GAME_MODE_CAPSULE_BEGIN && ConnectorsStatus.cylinderBottom){ // встравили низ капсулы
+      mode = ConnectorsStatus.cylinderStatus ? GAME_MODE_CAPSULE_END :  GAME_MODE_CAPSULE_FAIL_READ;
+      statusChanged();
+    }
+    if(mode == GAME_MODE_CAPSULE_FAIL_READ && ConnectorsStatus.cylinderTop){ // вытащили капсулу после неудачного чтения
+      mode = GAME_MODE_WAIT_BUTTON;
+      timers[2] = millis();
+      statusChanged();
+    }
+    if(mode == GAME_MODE_CAPSULE_GAME){ // игра
+      encoderLoop();
+      ledLoop();
+    }
+    if(mode == GAME_MODE_CAPSULE_GAME_OK || mode == GAME_MODE_CAPSULE_GAME_FAIL){ // после игры
+      if(ConnectorsStatus.cylinderTop){ //ждём пока вытащит
+        mode = GAME_MODE_WAIT_BUTTON;
+        timers[2] = millis();
+        statusChanged();
+      }
+    }
+    if(mode == GAME_MODE_WAIT_CAPSULE || mode == GAME_MODE_WAIT_BUTTON){ 
+      if(millis() - timers[2] > IDLE_TIME){ // долго ждали капсулу или кнопку
+        mode = GAME_MODE_IDLE;
+        statusChanged();
+        extIDLE();
+        ledIDLE();
+      }
+    }
+    if(mode == GAME_MODE_IDLE && checkButton()){ // проснулись
+      while(checkButton()) delay(10);
+      mode = GAME_MODE_WAIT_CAPSULE;
+      MIDIPlayRandom();
+      cylinderLight(true);
+      extDemo();
+      timers[2] = millis();
+      statusChanged();
+    }
+  }
+}
+
+void taskCore3(void* parameter) { //sound
+  Serial.print(F("Task3 running on core "));
+  Serial.println(xPortGetCoreID());
+  soundSetup();
+  for (;;) {
+    soundLoop();
   }
 }
 
@@ -206,4 +339,27 @@ int userColor(byte n) {
   if (c == 6)return n / 7 + 1;
   else if (c < 2) return n / 7;
   return 6;
+}
+
+void statusChanged() {
+  Serial.print(F("STATUS: ["));
+  Serial.print(mode);
+  switch(mode){
+    case GAME_MODE_INIT : Serial.println(F("] GAME_MODE_INIT")); break;
+    case GAME_MODE_START : Serial.println(F("] GAME_MODE_START")); break;
+    case GAME_MODE_CONNECT_TOP : Serial.println(F("] GAME_MODE_CONNECT_TOP")); break;
+    case GAME_MODE_CONNECT_BOX : Serial.println(F("] GAME_MODE_CONNECT_BOX")); break;
+    case GAME_MODE_CONNECT_LCD : Serial.println(F("] GAME_MODE_CONNECT_LCD")); break;
+    case GAME_MODE_WAIT_BUTTON : Serial.println(F("] GAME_MODE_WAIT_BUTTON")); break;
+    case GAME_MODE_WAIT_ANIMATION : Serial.println(F("] GAME_MODE_WAIT_ANIMATION")); break;
+    case GAME_MODE_WAIT_CAPSULE : Serial.println(F("] GAME_MODE_WAIT_CAPSULE")); break;
+    case GAME_MODE_CAPSULE_BEGIN : Serial.println(F("] GAME_MODE_CAPSULE_BEGIN")); break;
+    case GAME_MODE_CAPSULE_END : Serial.println(F("] GAME_MODE_CAPSULE_END")); break;
+    case GAME_MODE_CAPSULE_READ : Serial.println(F("] GAME_MODE_CAPSULE_READ")); break;
+    case GAME_MODE_CAPSULE_FAIL_READ : Serial.println(F("] GAME_MODE_CAPSULE_FAIL_READ")); break;
+    case GAME_MODE_CAPSULE_GAME : Serial.println(F("] GAME_MODE_CAPSULE_GAME")); break;
+    case GAME_MODE_CAPSULE_GAME_FAIL : Serial.println(F("] GAME_MODE_CAPSULE_GAME_FAIL")); break;
+    case GAME_MODE_CAPSULE_GAME_OK : Serial.println(F("] GAME_MODE_CAPSULE_GAME_OK")); break;
+    case GAME_MODE_IDLE : Serial.println(F("] GAME_MODE_IDLE")); break;
+  }
 }

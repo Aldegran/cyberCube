@@ -71,30 +71,30 @@ void printConsoleChar() {
 
 void unknownCommand(const char* command) {
   // Print unknown command
-  Serial.print("Unknown command: ");
+  Serial.print(F("Unknown command: "));
   Serial.println(command);
-  Serial.println("Use 'help' or '?' for command list.");
+  Serial.println(F("Use 'help' or '?' for command list."));
 }
 void cmdHelp() {
   // Print usage
-  Serial.println("Serial terminal usage:");
-  Serial.println("\thelp or ?\t\t\tprint this usage");
-  Serial.println("\tsettings\t\t\tshow current settings");
-  Serial.println("\treboot\t\t\t\treboot device");
-  Serial.println("\tlineColorChanceUp [new value]\tChance to change color in percent. Per level.");
-  Serial.println("\tlineChaosUp [new value]\t\tValue for random line position in pixels. Per level.");
-  Serial.println("\tlineChanceUp [new value]\tChance to change line position in percent. Per level.");
-  Serial.println("\tlineCycleDown [new value]\tLine speed Up. Per level.");
-  Serial.println("\tuserRadiusDown [new value]\tChange user marker radius in px. Per level.");
-  Serial.println("\tlineStepUp [new value]\t\tLine step per cycle in px. Per level..");
-  Serial.println("\tssid [new value]\t\tWiFi name.");
-  Serial.println("\tpassword [new value]\t\tWiFi password.");
-  Serial.println("\tap_ssid [new value]\t\tAP name.");
-  Serial.println("\tap_password [new value]\t\tAP password.");
-  Serial.println("\tlevels [new value]\t\tCout of levels.");
+  Serial.println(F("Serial terminal usage:"));
+  Serial.println(F("\thelp or ?\t\t\tprint this usage"));
+  Serial.println(F("\tsettings\t\t\tshow current settings"));
+  Serial.println(F("\treboot\t\t\t\treboot device"));
+  Serial.println(F("\tlineColorChanceUp [new value]\tChance to change color in percent. Per level."));
+  Serial.println(F("\tlineChaosUp [new value]\t\tValue for random line position in pixels. Per level."));
+  Serial.println(F("\tlineChanceUp [new value]\tChance to change line position in percent. Per level."));
+  Serial.println(F("\tlineCycleDown [new value]\tLine speed Up. Per level."));
+  Serial.println(F("\tuserRadiusDown [new value]\tChange user marker radius in px. Per level."));
+  Serial.println(F("\tlineStepUp [new value]\t\tLine step per cycle in px. Per level.."));
+  Serial.println(F("\tssid [new value]\t\tWiFi name."));
+  Serial.println(F("\tpassword [new value]\t\tWiFi password."));
+  Serial.println(F("\tap_ssid [new value]\t\tAP name."));
+  Serial.println(F("\tap_password [new value]\t\tAP password."));
+  Serial.println(F("\tlevels [new value]\t\tCout of levels."));
 }
 void cmdSettings() {
-  Serial.println("Current settings:");
+  Serial.println(F("Current settings:"));
   Serial.printf("\tlineColorChanceUp - \t%d\tChance to change color in percent. Per level.\r\n", gameSettings.lineColorChanceUp);
   Serial.printf("\tlineChaosUp - \t\t%d\tValue for random line position in pixels. Per level.\r\n", gameSettings.lineChaosUp);
   Serial.printf("\tlineChanceUp - \t\t%d\tChance to change line position in percent. Per level.\r\n", gameSettings.lineChanceUp);
@@ -109,57 +109,57 @@ void cmdSettings() {
 }
 void cmdSet_lineColorChanceUp() {
   gameSettings.lineColorChanceUp = atoi(term.getNext());
-  Serial.printf("Chance to change color in percent. Per level\r\n");
+  Serial.println(F("Chance to change color in percent. Per level"));
   saveConfig();
 }
 void cmdSet_lineChaosUp() {
   gameSettings.lineChaosUp = atoi(term.getNext());
-  Serial.printf("Value for random line position in pixels. Per level\r\n");
+  Serial.println(F("Value for random line position in pixels. Per level"));
   saveConfig();
 }
 void cmdSet_lineChanceUp() {
   gameSettings.lineChanceUp = atoi(term.getNext());
-  Serial.printf("Chance to change line position in percent. Per level\r\n");
+  Serial.println(F("Chance to change line position in percent. Per level\r\n"));
   saveConfig();
 }
 void cmdSet_lineCycleDown() {
   gameSettings.lineCycleDown = atoi(term.getNext());
-  Serial.printf("Line speed Up. Per level\r\n");
+  Serial.println(F("Line speed Up. Per level"));
   saveConfig();
 }
 void cmdSet_userRadiusDown() {
   gameSettings.userRadiusDown = atoi(term.getNext());
-  Serial.printf("Change user marker radius in px. Per level\r\n");
+  Serial.println(F("Change user marker radius in px. Per level"));
   saveConfig();
 }
 void cmdSet_lineStepUp() {
   gameSettings.lineStepUp = atoi(term.getNext());
-  Serial.printf("Line step per cycle in px. Per level.\r\n");
+  Serial.println(F("Line step per cycle in px. Per level."));
   saveConfig();
 }
 void cmdSet_ssid() {
   ssid = term.getNext();
-  Serial.printf("WiFi name\r\n");
+  Serial.println(F("WiFi name"));
   saveConfig();
 }
 void cmdSet_password() {
   password = term.getNext();
-  Serial.printf("WiFi password\r\n");
+  Serial.println(F("WiFi password"));
   saveConfig();
 }
 void cmdSet_ap_ssid() {
   ap_ssid = term.getNext();
-  Serial.printf("AP name\r\n");
+  Serial.println(F("AP name"));
   saveConfig();
 }
 void cmdSet_ap_password() {
   ap_password = term.getNext();
-  Serial.printf("AP password\r\n");
+  Serial.println(F("AP password"));
   saveConfig();
 }
 void cmdSet_levels() {
   gameSettings.levels = atoi(term.getNext());
-  Serial.printf("Cout of levels\r\n");
+  Serial.println(F("Cout of levels"));
   saveConfig();
 }
 void cmdSet_reboot() {
@@ -175,7 +175,7 @@ bool loadConfig() {
   //SPIFFS.remove("/config.json"); Serial.println("************ Config reset ************");
   File configFile = SPIFFS.open("/config.json", "r");
   if (!configFile) {
-    Serial.println("Failed to open config file");
+    Serial.println(F("Failed to open config file"));
     configFile.close();
     gameSettings.lineColorChanceUp = 3;
     gameSettings.lineChaosUp = 10;
@@ -193,7 +193,7 @@ bool loadConfig() {
   }
   size_t size = configFile.size();
   if (size > 1024) {
-    Serial.println("Config file size is too large");
+    Serial.println(F("Config file size is too large"));
     configFile.close();
     return false;
   }
@@ -233,7 +233,7 @@ bool saveConfig() {
   json["levels"] = String(gameSettings.levels);
   File configFile = SPIFFS.open("/config.json", "w+");
   if (!configFile) {
-    Serial.println("Failed to open config file for writing");
+    Serial.println(F("Failed to open config file for writing"));
     return false;
   }
   serializeJson(json, configFile);

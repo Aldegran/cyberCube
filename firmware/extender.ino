@@ -5,7 +5,9 @@ PCF8575 EXT_Serv(0x21);
 PCF8575 EXT_Led1(0x22);
 PCF8575 EXT_Led2(0x23);
 PCF8575 EXT_Led3(0x24);
-extern unsigned long timers[2];
+extern unsigned long timers[3];
+extern byte mode;
+extern ConnectorsStatusStruct ConnectorsStatus;
 unsigned int currentButtonValue = 0;
 byte currentButton = 0;
 //const int EXT_BUTTON_INT_PIN = 15;
@@ -19,87 +21,93 @@ void EXTButtonInterrupt() {
 }
 
 void setupExtender() {
-  if (!EXT_Led0.begin()) {
-    Serial.println("EXT_Led0 init\t[FAIL]");
-  } else if (!EXT_Led0.isConnected()) {
-    Serial.println("EXT_Led0 connect\t[FAIL]");
-  } else {
-    EXT_Led0.write16(0xFFFF);
-    inited[0] = true;
-    Serial.println("EXT_Led0 init\t[OK]");
-  }
-  if (!EXT_Led1.begin()) {
-    Serial.println("EXT_Led1 init\t[FAIL]");
-  } else if (!EXT_Led1.isConnected()) {
-    Serial.println("EXT_Led1 connect\t[FAIL]");
-  } else {
-    EXT_Led1.write16(0xFFFF);
-    inited[2] = true;
-    Serial.println("EXT_Led1 init\t[OK]");
-  }
-  if (!EXT_Led2.begin()) {
-    Serial.println("EXT_Led2 init\t[FAIL]");
-  } else if (!EXT_Led2.isConnected()) {
-    Serial.println("EXT_Led2 connect\t[FAIL]");
-  } else {
-    EXT_Led2.write16(0xFFFF);
-    inited[3] = true;
-    Serial.println("EXT_Led2 init\t[OK]");
-  }
-  if (!EXT_Led3.begin()) {
-    Serial.println("EXT_Led3 init\t[FAIL]");
-  } else if (!EXT_Led3.isConnected()) {
-    Serial.println("EXT_Led3 connect\t[FAIL]");
-  } else {
-    EXT_Led3.write16(0xFFFF);
-    inited[4] = true;
-    Serial.println("EXT_Led3 init\t[OK]");
-  }
   if (!EXT_Serv.begin()) {
-    Serial.println("EXT_Serv init\t[FAIL]");
+    Serial.println(F("EXT_Serv init\t[FAIL]"));
   } else if (!EXT_Serv.isConnected()) {
-    Serial.println("EXT_Serv connect\t[FAIL]");
+    Serial.println(F("EXT_Serv connect\t[FAIL]"));
   } else {
     EXT_Serv.write16(0xFFFF);
     inited[5] = true;
-    Serial.println("EXT_Serv init\t[OK]");
+    Serial.println(F("EXT_Serv init\t[OK]"));
   }
-  /*if (!EXT_Button.begin()){
-    Serial.println("EXT_Button init\t[FAIL]");
-  } else if (!EXT_Button.isConnected()){
-    Serial.println("EXT_Button connect\t[FAIL]");
-  } else {
-    pinMode(EXT_BUTTON_INT_PIN, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(EXT_BUTTON_INT_PIN), EXTButtonInterrupt, FALLING);
-    inited[1] = true;
-  }*/
   timers[0] = millis();
 }
+
+bool setupBoxExtenders(){
+    if (!EXT_Led0.begin()) {
+      Serial.println(F("EXT_Led0 init\t[FAIL]"));
+      inited[0] = false;
+    } else if (!EXT_Led0.isConnected()) {
+      Serial.println(F("EXT_Led0 connect\t[FAIL]"));
+      inited[0] = false;
+    } else {
+      EXT_Led0.write16(0xFFFF);
+      inited[0] = true;
+      Serial.println(F("EXT_Led0 init\t[OK]"));
+    }
+    if (!EXT_Led1.begin()) {
+      Serial.println(F("EXT_Led1 init\t[FAIL]"));
+      inited[2] = false;
+    } else if (!EXT_Led1.isConnected()) {
+      Serial.println(F("EXT_Led1 connect\t[FAIL]"));
+      inited[2] = false;
+    } else {
+      EXT_Led1.write16(0xFFFF);
+      inited[2] = true;
+      Serial.println(F("EXT_Led1 init\t[OK]"));
+    }
+    if (!EXT_Led2.begin()) {
+      Serial.println(F("EXT_Led2 init\t[FAIL]"));
+      inited[3] = false;
+    } else if (!EXT_Led2.isConnected()) {
+      Serial.println(F("EXT_Led2 connect\t[FAIL]"));
+      inited[3] = false;
+    } else {
+      EXT_Led2.write16(0xFFFF);
+      inited[3] = true;
+      Serial.println(F("EXT_Led2 init\t[OK]"));
+    }
+    if (!EXT_Led3.begin()) {
+      Serial.println(F("EXT_Led3 init\t[FAIL]"));
+      inited[4] = false;
+    } else if (!EXT_Led3.isConnected()) {
+      Serial.println(F("EXT_Led3 connect\t[FAIL]"));
+      inited[4] = false;
+    } else {
+      EXT_Led3.write16(0xFFFF);
+      inited[4] = true;
+      Serial.println(F("EXT_Led3 init\t[OK]"));
+    }
+
+    if(inited[0] && inited[2] && inited[3] && inited[4]){
+      extDemo();
+      return true;
+    }
+    return false;
+}
+
+void extDemo(){
+  for(byte i = 0; i<16;i++) {
+    EXT_Led1.write(i, false);
+    EXT_Led2.write(i, false);
+    delay(1000-i*50);
+  }
+  for(byte i = 0; i<16;i++) {
+    EXT_Led0.write(i, false);
+    EXT_Led3.write(i, false);
+    delay(500-i*20);
+  }
+  delay(3000);
+  EXT_Led0.write16(0xFFFF);
+  EXT_Led1.write16(0xFFFF);
+  EXT_Led2.write16(0xFFFF);
+  EXT_Led3.write16(0xFFFF);
+  delay(2000);
+}
+
 byte t[5] = { 0,0,0,0,0 };
 void extenderLoop() {
-  if (millis() - timers[0] > 10) {
-    if (inited[0])EXT_Led0.write16(random(0xFFFF));
-    if (inited[2]) {
-      t[1]++;
-      if (t[0] % 10 == 0)t[2] = random(0xff);
-      int r = t[1];
-      r = r << 8;
-      r += t[2];
-      EXT_Led1.write16(r);
-    }
-    if (inited[3]) {
-      t[3]++;
-      if (t[0] % 10 == 0)t[4] = random(0xff);
-      int r = t[3];
-      r = r << 8;
-      r += t[4];
-      EXT_Led2.write16(r);
-    }
-    if (inited[4])EXT_Led3.write16(random(0xFFFF));
-    //if (inited[5])EXT_Serv.write16(random(0xFFFF));
-    timers[0] = millis();
-    t[0]++;
-  }
+  MBPoints();
   /*if (inited[1] && EXTButtonFlag) {
     EXTButtonFlag = false;
     unsigned int cb = EXT_Button.read16();
@@ -117,14 +125,78 @@ void extenderLoop() {
       }
     }
   }*/
+  if (inited[5])readConnectors();
+}
+
+void readConnectors() {
+  if(mode == GAME_MODE_CAPSULE_END 
+  || mode == GAME_MODE_CAPSULE_READ  
+  || mode == GAME_MODE_WAIT_ANIMATION  
+  || mode == GAME_MODE_CAPSULE_GAME  
+  || mode == GAME_MODE_CAPSULE_GAME_FAIL  
+  || mode == GAME_MODE_CAPSULE_GAME_OK ) return;
+  //EXT_Serv.write16(0xFFFF);
+  delay(10);
+  int v = EXT_Serv.read16();
+  if(!(v & (1<<2))) {
+    if(!ConnectorsStatus.cylinderConnection){
+      ConnectorsStatus.cylinderConnection = true;
+      Serial.println(F("Connect: cylinderConnection"));
+    }
+  } else if(ConnectorsStatus.cylinderConnection){
+    ConnectorsStatus.cylinderConnection = false;
+    Serial.println(F("Connect: DISCONECT cylinderConnection"));
+  }
+  if(!(v & (1<<3))) {
+    if(!ConnectorsStatus.cylinderTop){
+    ConnectorsStatus.cylinderTop = true;
+    Serial.println(F("Connect: cylinderTop"));
+    }
+  } else if(ConnectorsStatus.cylinderTop){
+    ConnectorsStatus.cylinderTop = false;
+    Serial.println(F("Connect: DISCONECT cylinderTop"));
+  }
+  if(!(v & (1<<4))) {
+    if(!ConnectorsStatus.cylinderStatus){
+    ConnectorsStatus.cylinderStatus = true;
+    Serial.println(F("Connect: cylinderStatus"));
+    }
+  } else if(ConnectorsStatus.cylinderStatus){
+    ConnectorsStatus.cylinderStatus = false;
+    Serial.println(F("Connect: DISCONECT cylinderStatus"));
+  }
+  if(!(v & (1<<6))) {
+    if(!ConnectorsStatus.LCDConnection){
+    ConnectorsStatus.LCDConnection = 2;
+    Serial.println(F("Connect: LCDConnection"));
+    }
+  } else if(ConnectorsStatus.LCDConnection){
+    ConnectorsStatus.LCDConnection = false;
+    Serial.println(F("Connect: DISCONECT LCDConnection"));
+  }
+  if(!(v>>8 & (1<<0))) {
+    if(!ConnectorsStatus.cylinderBottom){
+    ConnectorsStatus.cylinderBottom = true;
+    Serial.println(F("Connect: cylinderBottom"));
+    }
+  } else if(ConnectorsStatus.cylinderBottom){
+    ConnectorsStatus.cylinderBottom = false;
+    Serial.println(F("Connect: DISCONECT cylinderBottom"));
+  }
+  /*if(v != 0xFFFF){
+    Serial.println(v, BIN);
+  }*/
+  if(mode == GAME_MODE_START && random(50) == 2){
+    EXT_Serv.write(15, false);
+    delay(50);
+    EXT_Serv.write(15, true);
+  }
 }
 
 void setLedRes() {
-  //if (inited[5])EXT_Serv.write(0, false);
   digitalWrite(LCD_RST, LOW);
 }
 void resetLedRes() {
-  //if (inited[5])EXT_Serv.write(0, true);
   digitalWrite(LCD_RST, HIGH);
 }
 void setLedDC() {
@@ -142,10 +214,73 @@ void resetLedCS() {
 
 void setRFIDCS() {
   if (inited[5])EXT_Serv.write(1, false);
-  //digitalWrite(2, LOW);
 }
 
 void resetRFIDCS() {
   if (inited[5])EXT_Serv.write(1, true);
-  //digitalWrite(2, HIGH);
+}
+
+void cylinderLight(bool led){
+    EXT_Serv.write(14, !led);
+}
+
+void MBPoints(){
+  if (millis() - timers[0] > 10) {
+    //MBStrips();
+    if (inited[2]) {
+      t[1]++;
+      if (t[0] % 10 == 0)t[2] = random(0xff);
+      int r = t[1];
+      r = r << 8;
+      r += t[2];
+      EXT_Led1.write16(r);
+    }
+    if (inited[3]) {
+      t[3]++;
+      if (t[0] % 10 == 0)t[4] = random(0xff);
+      int r = t[3];
+      r &= ~(1<<1); /// свет в цилиндре сверху
+      r = r << 8;
+      r += t[4];
+      
+      EXT_Led2.write16(r);
+    }
+    timers[0] = millis();
+    t[0]++;
+  }
+}
+void MBStrips(){
+    if(mode < GAME_MODE_WAIT_CAPSULE || mode == GAME_MODE_CAPSULE_FAIL_READ || mode == GAME_MODE_CAPSULE_GAME_FAIL || mode == GAME_MODE_CAPSULE_GAME_OK) {
+      if (inited[0])EXT_Led0.write16(0xFFFF);
+      if (inited[4])EXT_Led3.write16(0xFFFF);
+      return;
+    }
+    if (inited[0])EXT_Led0.write16(random(0xFFFF));
+    if (inited[4])EXT_Led3.write16(cylinderStrips() + random(0xFF));
+}
+
+byte cylinderStripsCycle = 0;
+byte cylinderStripsValue = 0;
+int cylinderStrips(){
+  cylinderStripsCycle+=5;
+  if(cylinderStripsCycle>80)cylinderStripsCycle = 0;
+  switch(cylinderStripsCycle){
+    case 10: cylinderStripsValue = B11111110; break;
+    case 20: cylinderStripsValue = B11111101; break;
+    case 30: cylinderStripsValue = B11111011; break;
+    case 40: cylinderStripsValue = B11110111; break;
+    case 50: cylinderStripsValue = B11101111; break;
+    case 60: cylinderStripsValue = B11011111; break;
+    case 70: cylinderStripsValue = B10111111; break;
+    case 80: cylinderStripsValue = B01111111; break;
+  }
+  return cylinderStripsValue<<8;
+}
+
+void extIDLE(){
+  EXT_Led0.write16(0xFFFF);
+  EXT_Led1.write16(0xFFFF);
+  EXT_Led2.write16(0xFFFF);
+  EXT_Led3.write16(0xFFFF);
+  cylinderLight(false);
 }

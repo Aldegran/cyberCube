@@ -65,3 +65,14 @@ void ledLoop() {
     timers[1] = millis();
   }
 }
+
+void ledFlash(){
+  for (byte i = 0; i < LED_COUNT;i++) strip.setPixelColor(i, ledColors[7]);
+  strip.show();
+  delay(100);
+  eraseLeds();
+}
+
+void ledIDLE(){
+  eraseLeds();
+}
