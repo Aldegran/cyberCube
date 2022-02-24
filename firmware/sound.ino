@@ -15,7 +15,7 @@ void soundSetup() {
   Serial.println(F("DFPlayer init\t[OK]"));
   myDFPlayer.setTimeOut(500);
   myDFPlayer.volume(5);
-  soundPlay(1, false);
+  //soundPlay(1, false);
 }
 
 void printSoundDetail(uint8_t type, int value) {

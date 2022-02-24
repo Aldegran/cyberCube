@@ -154,7 +154,7 @@ void displayGame() {
   case 0:
     gameMode = 1;
     setleds();
-    showUser(0, false);
+    showUserZero(false);
     break;
 
 

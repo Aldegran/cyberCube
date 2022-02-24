@@ -21,8 +21,8 @@ void ledSetup() {
   ledColors[8] = strip.Color(50, 50, 50);
   strip.begin();
   strip.setBrightness(100);
-  showUser(n, false);
-  setleds();
+  //showUser(false);
+  //setLeds();
   strip.show();
   timers[1] = millis();
 }
@@ -32,14 +32,8 @@ void eraseLeds() {
   strip.show();
 }
 
-void setleds() {
-  for (byte i = 0; i < 6;i++) {
-    strip.setPixelColor(tn(i * 7 - 1), ledColors[i + 1]);
-    strip.setPixelColor(i * 7, ledColors[i + 1]);
-    strip.setPixelColor(i * 7 + 1, ledColors[i + 1]);
-  }
-}
-void showUser(byte n, byte erase) {
+
+void showUser(byte erase) {
   byte mainColor = userColor(n) + 1;
   strip.setPixelColor(tn(n - 2), ledColors[erase ? 0 : 8]);
   strip.setPixelColor(tn(n - 1), ledColors[erase ? 0 : mainColor]);
@@ -55,11 +49,11 @@ byte tn(int n) {
 void ledLoop() {
   if (millis() - timers[1] > 10 && mode == 1 && gameMode == 2) {
     if (n != encoderData.value[2]) {
-      showUser(n, true);
+      showUser(true);
       n = encoderData.value[2];
       //if (n == LED_COUNT)n = 0;
-      showUser(n, false);
-      setleds();
+      showUser(false);
+      setLeds();
       strip.show();
     }
     timers[1] = millis();
@@ -75,4 +69,17 @@ void ledFlash(){
 
 void ledIDLE(){
   eraseLeds();
+}
+
+void setLeds() {
+  for (byte i = 0; i < 6;i++) {
+    strip.setPixelColor(tn(i * 7 - 1), ledColors[i + 1]);
+    strip.setPixelColor(i * 7, ledColors[i + 1]);
+    strip.setPixelColor(i * 7 + 1, ledColors[i + 1]);
+  }
+}
+
+void showUserZero(byte erase){
+  n = 0;
+  showUser(erase);
 }

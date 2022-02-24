@@ -1,0 +1,16 @@
+{
+  "lineColorChance_0": 50,
+  "lineColorChance_1": 50,
+  "lineChance_0": 10,
+  "lineChance_1": 10,
+  "lineChaos_0": 20,
+  "lineChaos_1": 20,
+  "positionBonus_0": 2,
+  "positionBonus_1": 9,
+  "colorBonus_0": 2,
+  "colorBonus_1": 9,
+  "maxScore": 1000,
+  "userRadius": 15,
+  "lineCycle": 6,
+  "lineStep": 2
+}

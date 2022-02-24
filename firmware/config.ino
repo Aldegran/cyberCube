@@ -263,3 +263,36 @@ File readFile(char* qrName) {
 void closeFile(File an) {
   an.close();
 }
+
+bool readRFIDFile(){
+  String fileName = String(ConnectorsStatus.RFID);
+  Serial.printf("Read capsule %s\r\n",fileName.c_str());
+  fileName = "/"+fileName;
+  File configFile = SPIFFS.open(fileName+".json", "r");
+  size_t size = configFile.size();
+  if (size > 1024) {
+    Serial.println(F("Config file size is too large"));
+    configFile.close();
+    return false;
+  }
+  jsonConfig = configFile.readString();
+  DynamicJsonDocument jsonBuffer(1024 + jsonConfig.length());
+  deserializeJson(jsonBuffer, jsonConfig);
+  JsonObject root = jsonBuffer.as<JsonObject>();
+  RFIDSettings.lineColorChance[0] = root["lineColorChance_0"].as<int>();
+  RFIDSettings.lineColorChance[1] = root["lineColorChance_1"].as<int>();
+  RFIDSettings.lineChance[0] = root["lineChance_0"].as<int>();
+  RFIDSettings.lineChance[1] = root["lineChance_1"].as<int>();
+  RFIDSettings.lineChaos[0] = root["lineChaos_0"].as<int>();
+  RFIDSettings.lineChaos[1] = root["lineChaos_1"].as<int>();
+  RFIDSettings.positionBonus[0] = root["positionBonus_0"].as<int>();
+  RFIDSettings.positionBonus[1] = root["positionBonus_1"].as<int>();
+  RFIDSettings.colorBonus[0] = root["colorBonus_0"].as<int>();
+  RFIDSettings.colorBonus[1] = root["colorBonus_1"].as<int>();
+  RFIDSettings.maxScore = root["maxScore"].as<int>();
+  RFIDSettings.userRadius = root["userRadius"].as<int>();
+  RFIDSettings.lineCycle = root["lineCycle"].as<int>();
+  RFIDSettings.lineStep = root["lineStep"].as<int>();
+  configFile.close();
+  return true;
+}

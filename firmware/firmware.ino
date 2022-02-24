@@ -80,6 +80,9 @@ typedef struct {
   byte cylinderConnection;
   byte LCDConnection;
   byte extendersConnection;
+  byte stopEXT;
+  byte RFIDok;
+  char RFID[8];
 } __attribute__((packed, aligned(1))) ConnectorsStatusStruct;
 ConnectorsStatusStruct ConnectorsStatus;
 
@@ -107,7 +110,7 @@ bool modeAP() {
 void setup() {
   Serial.begin(115200);
   Serial.println(F("======================================================="));
-  //Serial2.begin(115200);
+  SPI.begin();
   if (!FSInit()) {
     Serial.println(F("An Error has occurred while mounting SPIFFS"));
   } else {
@@ -120,6 +123,8 @@ void setup() {
   ConnectorsStatus.cylinderConnection = false;
   ConnectorsStatus.LCDConnection = false;
   ConnectorsStatus.extendersConnection = false;
+  ConnectorsStatus.stopEXT = false;
+  ConnectorsStatus.RFIDok = false;
   xTaskCreatePinnedToCore(taskCore0, "Core0", 10000, NULL, 0, &Task0, 0);
   delay(500);
   xTaskCreatePinnedToCore(taskCore1, "Core1", 10000, NULL, 0, &Task1, 1);
@@ -129,46 +134,35 @@ void setup() {
   xTaskCreatePinnedToCore(taskCore3, "Core3", 10000, NULL, 0, &Task3, 1);
 }
 
-void taskCore2(void* parameter) { //display, rfid
-  Serial.print(F("Task2 running on core "));
+void taskCore2(void* parameter) { //display
+  Serial.print(F("<<< Task2 running on core "));
   Serial.println(xPortGetCoreID());
-  SPI.begin();
-  /*RFIDSettings.lineColorChance[0] = 50;
-  RFIDSettings.lineColorChance[1] = 50;
-  RFIDSettings.lineChance[0] = 10;
-  RFIDSettings.lineChance[1] = 10;
-  RFIDSettings.lineChaos[0] = 20;
-  RFIDSettings.lineChaos[1] = 20;
-  RFIDSettings.positionBonus[0] = 2;
-  RFIDSettings.positionBonus[1] = 9;
-  RFIDSettings.colorBonus[0] = 2;
-  RFIDSettings.colorBonus[1] = 9;
-  RFIDSettings.maxScore = 1000;
-  RFIDSettings.userRadius = 15;
-  RFIDSettings.lineCycle = 6;
-  RFIDSettings.lineStep = 2;*/
-  RFIDSetup();
-  mode = GAME_MODE_START;
-  statusChanged();
-  //displaySetup();
-  //setLedCS();
+  /*{
+    RFIDSettings.lineColorChance[0] = 50;
+    RFIDSettings.lineColorChance[1] = 50;
+    RFIDSettings.lineChance[0] = 10;
+    RFIDSettings.lineChance[1] = 10;
+    RFIDSettings.lineChaos[0] = 20;
+    RFIDSettings.lineChaos[1] = 20;
+    RFIDSettings.positionBonus[0] = 2;
+    RFIDSettings.positionBonus[1] = 9;
+    RFIDSettings.colorBonus[0] = 2;
+    RFIDSettings.colorBonus[1] = 9;
+    RFIDSettings.maxScore = 1000;
+    RFIDSettings.userRadius = 15;
+    RFIDSettings.lineCycle = 6;
+    RFIDSettings.lineStep = 2;
+  }*/
   for (;;) {
-    if(mode == GAME_MODE_CONNECT_BOX && ConnectorsStatus.LCDConnection){
-      if(ConnectorsStatus.LCDConnection == 2 ){
-        //displaySetup();
-        ConnectorsStatus.LCDConnection = true;
-        mode = GAME_MODE_CONNECT_LCD;
-        statusChanged();
-      }
+    
+    if(mode == GAME_MODE_CONNECT_BOX && ConnectorsStatus.LCDConnection == 2){
+      ConnectorsStatus.stopEXT = true;
+      displaySetup();
+      ConnectorsStatus.stopEXT = false;
+      ConnectorsStatus.LCDConnection = true;
     }
-    if( ConnectorsStatus.LCDConnection == true && mode != GAME_MODE_IDLE){
+    if( ConnectorsStatus.LCDConnection == true && mode != GAME_MODE_IDLE &&  mode >= GAME_MODE_CONNECT_LCD ){
       displayLoop();
-    }
-    if(mode == GAME_MODE_CAPSULE_END) {
-      //RFIDLoop();
-      delay(3000);
-      mode = GAME_MODE_CAPSULE_READ;
-      statusChanged();
     }
     /*for (byte i = 0; i < 3; i++) {
       if (encoderData.delta[i]) {
@@ -180,7 +174,7 @@ void taskCore2(void* parameter) { //display, rfid
 }
 
 void taskCore0(void* parameter) { //wifi
-  Serial.print("Task0 running on core ");
+  Serial.print("<<< Task0 running on core ");
   Serial.println(xPortGetCoreID());
   serialConsileInit();
   SPIFFS.begin();
@@ -235,11 +229,13 @@ void taskCore0(void* parameter) { //wifi
 }
 
 void taskCore1(void* parameter) { //encoder, led, WS
-  Serial.print(F("Task1 running on core "));
+  Serial.print(F("<<< Task1 running on core "));
   Serial.println(xPortGetCoreID());
   encoderSetup();
   setupExtender();
   ledSetup();
+  mode = GAME_MODE_START;
+  statusChanged();
   for (;;) {
     if(mode != GAME_MODE_IDLE) extenderLoop();
     if(mode == GAME_MODE_START && ConnectorsStatus.cylinderConnection){ // надели верх
@@ -254,18 +250,21 @@ void taskCore1(void* parameter) { //encoder, led, WS
           mode = GAME_MODE_START;
           statusChanged();
         }
-      } else {
-        if(mode!=GAME_MODE_CONNECT_LCD){
-          mode = GAME_MODE_CONNECT_BOX;
-          statusChanged();
-        }
-        cylinderLight(true);
+      } else {;
+        mode = GAME_MODE_CONNECT_BOX;
+        cylinderLight(false);
+        statusChanged();
       }
     }
+    if(mode == GAME_MODE_CONNECT_BOX && ConnectorsStatus.LCDConnection == true){
+        mode = GAME_MODE_CONNECT_LCD;
+        statusChanged();
+      }
     if(mode == GAME_MODE_WAIT_BUTTON && checkButton()){ // нажали кнопку
       ledFlash();
+      cylinderLight(true);
       while(checkButton()) delay(10);
-      mode = GAME_MODE_WAIT_CAPSULE;
+      mode = GAME_MODE_WAIT_ANIMATION;
       timers[2] = millis();
       statusChanged();
     }
@@ -275,13 +274,42 @@ void taskCore1(void* parameter) { //encoder, led, WS
       timers[2] = millis();
       statusChanged();
     }
+    ///
+    if(mode == GAME_MODE_WAIT_BUTTON){
+      
+    }
+    ///
     if(mode == GAME_MODE_CAPSULE_BEGIN && millis() - timers[2] > IDLE_TIME*2){ //долго впихиваем капсулу или передумали
       mode = GAME_MODE_WAIT_CAPSULE;
       timers[2] = millis();
       statusChanged();
     }
     if(mode == GAME_MODE_CAPSULE_BEGIN && ConnectorsStatus.cylinderBottom){ // встравили низ капсулы
+      cylinderLight(false);
       mode = ConnectorsStatus.cylinderStatus ? GAME_MODE_CAPSULE_END :  GAME_MODE_CAPSULE_FAIL_READ;
+      statusChanged();
+    }
+    if(mode == GAME_MODE_CAPSULE_END) {
+      for(byte i=0; i<10;i++){
+        Serial.println(F("Read RFID data..."));
+        if(readRFID()) break;
+        delay(1000);
+      }
+      if(ConnectorsStatus.RFIDok){
+        if(!readRFIDFile()){
+          mode = GAME_MODE_CAPSULE_FAIL_READ;
+          statusChanged();
+          return;
+        }
+      } else {
+        ConnectorsStatus.RFIDok = false;
+        mode = GAME_MODE_CAPSULE_FAIL_READ;
+        statusChanged();
+        return;
+      }
+      mode = GAME_MODE_CAPSULE_READ;
+      showUser(false);
+      setLeds();
       statusChanged();
     }
     if(mode == GAME_MODE_CAPSULE_FAIL_READ && ConnectorsStatus.cylinderTop){ // вытащили капсулу после неудачного чтения
@@ -290,8 +318,8 @@ void taskCore1(void* parameter) { //encoder, led, WS
       statusChanged();
     }
     if(mode == GAME_MODE_CAPSULE_GAME){ // игра
-      encoderLoop();
       ledLoop();
+      encoderLoop();
     }
     if(mode == GAME_MODE_CAPSULE_GAME_OK || mode == GAME_MODE_CAPSULE_GAME_FAIL){ // после игры
       if(ConnectorsStatus.cylinderTop){ //ждём пока вытащит
@@ -303,6 +331,7 @@ void taskCore1(void* parameter) { //encoder, led, WS
     if(mode == GAME_MODE_WAIT_CAPSULE || mode == GAME_MODE_WAIT_BUTTON){ 
       if(millis() - timers[2] > IDLE_TIME){ // долго ждали капсулу или кнопку
         mode = GAME_MODE_IDLE;
+        cylinderLight(false);
         statusChanged();
         extIDLE();
         ledIDLE();
@@ -310,7 +339,7 @@ void taskCore1(void* parameter) { //encoder, led, WS
     }
     if(mode == GAME_MODE_IDLE && checkButton()){ // проснулись
       while(checkButton()) delay(10);
-      mode = GAME_MODE_WAIT_CAPSULE;
+      mode = GAME_MODE_WAIT_ANIMATION;
       MIDIPlayRandom();
       cylinderLight(true);
       extDemo();
@@ -321,7 +350,7 @@ void taskCore1(void* parameter) { //encoder, led, WS
 }
 
 void taskCore3(void* parameter) { //sound
-  Serial.print(F("Task3 running on core "));
+  Serial.print(F("<<< Task3 running on core "));
   Serial.println(xPortGetCoreID());
   soundSetup();
   for (;;) {
