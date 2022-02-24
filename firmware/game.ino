@@ -16,6 +16,9 @@ typedef struct {
   byte level;
 } __attribute__((packed, aligned(1))) displayInfoStruct;
 
+extern byte mode;
+extern byte gameMode;
+
 displayInfoStruct displayInfo;
 
 void drawMarker(byte erase) {
@@ -153,6 +156,7 @@ void displayGame() {
   switch (gameMode) {
   case 0:
     gameMode = 1;
+    tft.fillScreen(BLACK);
     setleds();
     showUserZero(false);
     break;
@@ -277,6 +281,9 @@ void displayGame() {
         tft.fillScreen(BLACK);
         tft.setCursor(100, 100);
         tft.print("LOSE");
+        resetLedCS();
+        mode = GAME_MODE_CAPSULE_GAME_OK;
+        statusChanged();
       }
       if (displayInfo.score[0] > RFIDSettings.maxScore) { //win
         displayInfo.score[0] = RFIDSettings.maxScore;
@@ -288,6 +295,8 @@ void displayGame() {
         tft.fillScreen(BLACK);
         tft.setCursor(100, 100);
         tft.print("WIN");
+        resetLedCS();
+        mode = GAME_MODE_CAPSULE_GAME_FAIL;
       }
       byte currentlevel = map(displayInfo.score[0], 0, RFIDSettings.maxScore, 0, gameSettings.levels);
       if (currentlevel != displayInfo.level) {

@@ -161,7 +161,7 @@ void taskCore2(void* parameter) { //display
       ConnectorsStatus.stopEXT = false;
       ConnectorsStatus.LCDConnection = true;
     }
-    if( ConnectorsStatus.LCDConnection == true && mode != GAME_MODE_IDLE &&  mode >= GAME_MODE_CONNECT_LCD ){
+    if( ConnectorsStatus.LCDConnection == true && mode >= GAME_MODE_CONNECT_LCD ){
       displayLoop();
     }
     /*for (byte i = 0; i < 3; i++) {
@@ -312,18 +312,14 @@ void taskCore1(void* parameter) { //encoder, led, WS
       setLeds();
       statusChanged();
     }
-    if(mode == GAME_MODE_CAPSULE_FAIL_READ && ConnectorsStatus.cylinderTop){ // вытащили капсулу после неудачного чтения
-      mode = GAME_MODE_WAIT_BUTTON;
-      timers[2] = millis();
-      statusChanged();
-    }
+    
     if(mode == GAME_MODE_CAPSULE_GAME){ // игра
       ledLoop();
       encoderLoop();
     }
     if(mode == GAME_MODE_CAPSULE_GAME_OK || mode == GAME_MODE_CAPSULE_GAME_FAIL){ // после игры
       if(ConnectorsStatus.cylinderTop){ //ждём пока вытащит
-        mode = GAME_MODE_WAIT_BUTTON;
+        mode = GAME_MODE_CONNECT_LCD;
         timers[2] = millis();
         statusChanged();
       }
@@ -333,6 +329,7 @@ void taskCore1(void* parameter) { //encoder, led, WS
         mode = GAME_MODE_IDLE;
         cylinderLight(false);
         statusChanged();
+        delay(10);
         extIDLE();
         ledIDLE();
       }

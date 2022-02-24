@@ -158,11 +158,12 @@ void showCapsule(){
   tft.fillRect(0, WIDTH-50, 10, 50, WHITE);
   tft.fillRect(WIDTH-10, WIDTH-50, 10, 50, WHITE);
   tft.fillRect(100, 0, WIDTH-200, 10, WHITE);
-  tft.drawFastHLine(0,WIDTH,WIDTH,color565(127,127,127));
+  tft.drawFastHLine(0, WIDTH, WIDTH, color565(127,127,127));
 
-  tft.fillTriangle(0, 430, WIDTH, 430, HWIDTH, 480, WHITE);
-  tft.fillTriangle(10, 440, WIDTH-10, 440, HWIDTH, 470, BLACK);
-  tft.drawTriangle(0, 430, WIDTH, 430, HWIDTH, 480, YELLOW);
+  tft.fillTriangle(0, 480, WIDTH, 480, HWIDTH, 440, WHITE);
+  tft.fillTriangle(30, 470, WIDTH-30, 470, HWIDTH, 450, BLACK);
+  tft.drawTriangle(0, 480, WIDTH, 480, HWIDTH, 440, YELLOW);
+  
   tft.setCursor(40, 410);
   tft.print("Potribna capsula");
   for(int i = WIDTH-40; i>40; i-=45){
@@ -171,11 +172,46 @@ void showCapsule(){
   }
 }
 
+uint16_t blueColors[6] = {
+  color565(0,0,255),
+  color565(55,55,255),
+  color565(95,95,255),
+  color565(135,135,255),
+  color565(175,175,255),
+  color565(215,215,255),
+};
+
 void beginCapsule(){
   tft.fillRect(0, 390, WIDTH, 90, BLACK);
+  byte c = 0;
   for(int i = WIDTH-45; i>165; i-=45){
-    tft.fillRect(120, i, WIDTH-230, -30, BLUE);
+    tft.fillRect(120, i, WIDTH-230, -30, blueColors[c++]);
     delay(300);
+  }
+}
+
+void endCapsule(bool status){
+  if(!status){
+    tft.setCursor(40, WIDTH+20);
+    tft.print("Capsula pogana");
+    for(int i = WIDTH-45; i>40; i-=45){
+      tft.fillRect(120, i, WIDTH-230, -30, RED);
+      delay(300);
+    }
+      tft.fillTriangle(0, 430, WIDTH, 430, HWIDTH, 480, WHITE);
+      tft.fillTriangle(30, 440, WIDTH-30, 440, HWIDTH, 470, RED);
+      tft.drawTriangle(0, 430, WIDTH, 430, HWIDTH, 480, YELLOW);
+      tft.setCursor(40, 410);
+      tft.print("Vytagnit prystriy");
+  } else {
+    tft.setCursor(40, WIDTH+20);
+    tft.print("Capsula godna");
+    byte c = 0;
+    for(int i = WIDTH-45; i>40; i-=45){
+      tft.fillRect(120, i, WIDTH-230, -30, blueColors[c++]);
+      delay(300);
+    }
+    delay(2000);
   }
 }
 
@@ -185,10 +221,9 @@ void displayLoop() {
     showQR("code1.qr");
     break;*/
   case GAME_MODE_CAPSULE_GAME:
+    ConnectorsStatus.stopEXT = true;
     //displayGame();
-    delay(3000);
-    mode = GAME_MODE_CAPSULE_GAME_OK;
-    statusChanged();
+    ConnectorsStatus.stopEXT = false;
     break;
   case GAME_MODE_WAIT_ANIMATION:
     ConnectorsStatus.stopEXT = true;
@@ -202,10 +237,11 @@ void displayLoop() {
     break;
   case GAME_MODE_CONNECT_LCD:
     Animations.beginCapsule = false;
-    Animations.endCapsule = false;
     Animations.capsuleFail = false;
+    Animations.endCapsule = false;
     Animations.IDLE = false;
     ConnectorsStatus.stopEXT = true;
+    delay(20);
     setLedCS();
     showIntro();
     resetLedCS();
@@ -216,14 +252,23 @@ void displayLoop() {
     statusChanged();
     break;
   case GAME_MODE_CAPSULE_READ:
-    delay(3000);
+    ConnectorsStatus.stopEXT = true;
+    delay(20);
+      setLedCS();
+      endCapsule(true);
+      resetLedCS();
+      ConnectorsStatus.stopEXT = false;
+    gameMode = 0;
     mode = GAME_MODE_CAPSULE_GAME;
     statusChanged();
+    setLedCS();
   break;
   case GAME_MODE_IDLE:{
     if(!Animations.IDLE){
+      Serial.println(F("Animation IDLE"));
       Animations.IDLE = true;
       ConnectorsStatus.stopEXT = true;
+      delay(20);
       setLedCS();
       Waveshield.setScreenBrightness(0);
       tft.fillScreen(BLACK);
@@ -234,12 +279,43 @@ void displayLoop() {
   break;
   case GAME_MODE_CAPSULE_BEGIN:{
     if(!Animations.beginCapsule){
+      Serial.println(F("Animation"));
       Animations.beginCapsule = true;
       ConnectorsStatus.stopEXT = true;
+      delay(20);
       setLedCS();
       beginCapsule();
       resetLedCS();
       ConnectorsStatus.stopEXT = false;
+    }
+  }
+  break;
+  case GAME_MODE_CAPSULE_FAIL_READ:{
+    if(!Animations.capsuleFail){
+      Serial.println(F("Animation*"));
+      Animations.capsuleFail = true;
+      ConnectorsStatus.stopEXT = true;
+      delay(20);
+      setLedCS();
+      endCapsule(false);
+      resetLedCS();
+      ConnectorsStatus.stopEXT = false;
+      delay(20);
+    }
+    if(ConnectorsStatus.cylinderTop){ // вытащили капсулу после неудачного чтения
+      if(!Animations.endCapsule){
+        Serial.println(F("Animation"));
+        Animations.endCapsule = true;
+        ConnectorsStatus.stopEXT = true;
+        delay(20);
+        setLedCS();
+        tft.fillScreen(BLACK);
+        resetLedCS();
+        ConnectorsStatus.stopEXT = false;
+      }
+      mode = GAME_MODE_CONNECT_LCD;
+      timers[2] = millis();
+      statusChanged();
     }
   }
   break;
