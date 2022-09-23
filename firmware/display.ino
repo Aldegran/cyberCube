@@ -29,7 +29,8 @@ extern byte gameMode;
 extern byte mode;
 extern unsigned long timers[3];
 extern void eraseLeds();
-extern void setleds();
+extern void setLeds();
+extern void updateStrip();
 extern int userColor(byte n);
 
 int colors[7] = { WHITE, RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA };
@@ -114,23 +115,24 @@ void drawFileMC(char* qrName, int w, int h, byte zoom, int x, int y, int color, 
   mode = 2;
 }
 
-void showIntro(){
+void showIntro() {
   tft.fillScreen(BLACK);
-  tft.setCursor(40, HWIDTH-35);
+  tft.setCursor(40, HWIDTH - 35);
+  tft.setTextColor(YELLOW, BLACK);
   tft.print("Zavantazhenna");
-  tft.drawRect(0, HWIDTH-20, WIDTH, 40, YELLOW);
-  for(int i=5; i<WIDTH-5;i+=10){
-    tft.fillRect(i, HWIDTH-15, 8, 30, GREEN);
+  tft.drawRect(0, HWIDTH - 20, WIDTH, 40, YELLOW);
+  for (int i = 5; i < WIDTH - 5;i += 10) {
+    tft.fillRect(i, HWIDTH - 15, 8, 30, GREEN);
     delay(50);
   }
-  tft.fillRect(0, HWIDTH-47, WIDTH, 17, BLACK);
-  tft.setCursor(20, HWIDTH+40);
+  tft.fillRect(0, HWIDTH - 47, WIDTH, 17, BLACK);
+  tft.setCursor(20, HWIDTH + 40);
   tft.print("Initchializhachiya");
   delay(2000);
-  
+
   tft.fillScreen(BLACK);
   tft.fillTriangle(0, 50, WIDTH, 50, HWIDTH, 0, WHITE);
-  tft.fillTriangle(10, 40, WIDTH-10, 40, HWIDTH, 10, BLACK);
+  tft.fillTriangle(10, 40, WIDTH - 10, 40, HWIDTH, 10, BLACK);
   tft.drawTriangle(0, 50, WIDTH, 50, HWIDTH, 0, YELLOW);
   tft.setCursor(40, 70);
   tft.print("Ochikuyu knopku");
@@ -139,35 +141,35 @@ void showIntro(){
   tft.print("Pidgotuyte vashu capsulu do chytuvanna ta natysnyt knopku");
 }
 
-void showCapsule(){
+void showCapsule() {
   tft.fillScreen(BLACK);
-  tft.setCursor(40, HWIDTH-35);
+  tft.setCursor(40, HWIDTH - 35);
   tft.print("Pidgotuvanna");
-  tft.drawRect(0, HWIDTH-20, WIDTH, 40, YELLOW);
-  for(int i=5; i<WIDTH-5;i+=10){
-    tft.fillRect(i, HWIDTH-15, 8, 30, BLUE);
+  tft.drawRect(0, HWIDTH - 20, WIDTH, 40, YELLOW);
+  for (int i = 5; i < WIDTH - 5;i += 10) {
+    tft.fillRect(i, HWIDTH - 15, 8, 30, BLUE);
     delay(100);
   }
   delay(2000);
-  
+
   tft.fillScreen(BLACK);
-  tft.fillRect(0, WIDTH-50, 110, 10, WHITE);
-  tft.fillRect(WIDTH-100, WIDTH-50, 100, 10, WHITE);
-  tft.fillRect(100, 0, 10, WIDTH-50, WHITE);
-  tft.fillRect(WIDTH-100, 0, 10, WIDTH-50, WHITE);
-  tft.fillRect(0, WIDTH-50, 10, 50, WHITE);
-  tft.fillRect(WIDTH-10, WIDTH-50, 10, 50, WHITE);
-  tft.fillRect(100, 0, WIDTH-200, 10, WHITE);
-  tft.drawFastHLine(0, WIDTH, WIDTH, color565(127,127,127));
+  tft.fillRect(0, WIDTH - 50, 110, 10, WHITE);
+  tft.fillRect(WIDTH - 100, WIDTH - 50, 100, 10, WHITE);
+  tft.fillRect(100, 0, 10, WIDTH - 50, WHITE);
+  tft.fillRect(WIDTH - 100, 0, 10, WIDTH - 50, WHITE);
+  tft.fillRect(0, WIDTH - 50, 10, 50, WHITE);
+  tft.fillRect(WIDTH - 10, WIDTH - 50, 10, 50, WHITE);
+  tft.fillRect(100, 0, WIDTH - 200, 10, WHITE);
+  tft.drawFastHLine(0, WIDTH, WIDTH, color565(127, 127, 127));
 
   tft.fillTriangle(0, 480, WIDTH, 480, HWIDTH, 440, WHITE);
-  tft.fillTriangle(30, 470, WIDTH-30, 470, HWIDTH, 450, BLACK);
+  tft.fillTriangle(30, 470, WIDTH - 30, 470, HWIDTH, 450, BLACK);
   tft.drawTriangle(0, 480, WIDTH, 480, HWIDTH, 440, YELLOW);
-  
+
   tft.setCursor(40, 410);
   tft.print("Potribna capsula");
-  for(int i = WIDTH-40; i>40; i-=45){
-    tft.drawRect(115, i, WIDTH-220, -40, GREEN);
+  for (int i = WIDTH - 40; i > 40; i -= 45) {
+    tft.drawRect(115, i, WIDTH - 220, -40, GREEN);
     delay(50);
   }
 }
@@ -181,34 +183,34 @@ uint16_t blueColors[6] = {
   color565(215,215,255),
 };
 
-void beginCapsule(){
+void beginCapsule() {
   tft.fillRect(0, 390, WIDTH, 90, BLACK);
   byte c = 0;
-  for(int i = WIDTH-45; i>165; i-=45){
-    tft.fillRect(120, i, WIDTH-230, -30, blueColors[c++]);
+  for (int i = WIDTH - 45; i > 165; i -= 45) {
+    tft.fillRect(120, i, WIDTH - 230, -30, blueColors[c++]);
     delay(300);
   }
 }
 
-void endCapsule(bool status){
-  if(!status){
-    tft.setCursor(40, WIDTH+20);
+void endCapsule(bool status) {
+  if (!status) {
+    tft.setCursor(40, WIDTH + 20);
     tft.print("Capsula pogana");
-    for(int i = WIDTH-45; i>40; i-=45){
-      tft.fillRect(120, i, WIDTH-230, -30, RED);
+    for (int i = WIDTH - 45; i > 40; i -= 45) {
+      tft.fillRect(120, i, WIDTH - 230, -30, RED);
       delay(300);
     }
-      tft.fillTriangle(0, 430, WIDTH, 430, HWIDTH, 480, WHITE);
-      tft.fillTriangle(30, 440, WIDTH-30, 440, HWIDTH, 470, RED);
-      tft.drawTriangle(0, 430, WIDTH, 430, HWIDTH, 480, YELLOW);
-      tft.setCursor(40, 410);
-      tft.print("Vytagnit prystriy");
+    tft.fillTriangle(0, 430, WIDTH, 430, HWIDTH, 480, WHITE);
+    tft.fillTriangle(30, 440, WIDTH - 30, 440, HWIDTH, 470, RED);
+    tft.drawTriangle(0, 430, WIDTH, 430, HWIDTH, 480, YELLOW);
+    tft.setCursor(40, 410);
+    tft.print("Vytagnit prystriy");
   } else {
-    tft.setCursor(40, WIDTH+20);
+    tft.setCursor(40, WIDTH + 20);
     tft.print("Capsula godna");
     byte c = 0;
-    for(int i = WIDTH-45; i>40; i-=45){
-      tft.fillRect(120, i, WIDTH-230, -30, blueColors[c++]);
+    for (int i = WIDTH - 45; i > 40; i -= 45) {
+      tft.fillRect(120, i, WIDTH - 230, -30, blueColors[c++]);
       delay(300);
     }
     delay(2000);
@@ -217,12 +219,12 @@ void endCapsule(bool status){
 
 void displayLoop() {
   switch (mode) {
-  /*case 0:
-    showQR("code1.qr");
-    break;*/
+    /*case 0:
+      showQR("code1.qr");
+      break;*/
   case GAME_MODE_CAPSULE_GAME:
     ConnectorsStatus.stopEXT = true;
-    //displayGame();
+    displayGame();
     ConnectorsStatus.stopEXT = false;
     break;
   case GAME_MODE_WAIT_ANIMATION:
@@ -254,17 +256,20 @@ void displayLoop() {
   case GAME_MODE_CAPSULE_READ:
     ConnectorsStatus.stopEXT = true;
     delay(20);
-      setLedCS();
-      endCapsule(true);
-      resetLedCS();
-      ConnectorsStatus.stopEXT = false;
+    setLedCS();
+    endCapsule(true);
+    resetLedCS();
+    ConnectorsStatus.stopEXT = false;
     gameMode = 0;
     mode = GAME_MODE_CAPSULE_GAME;
+    showUser(false);
+    setLeds();
+    updateStrip();
     statusChanged();
     setLedCS();
-  break;
-  case GAME_MODE_IDLE:{
-    if(!Animations.IDLE){
+    break;
+  case GAME_MODE_IDLE: {
+    if (!Animations.IDLE) {
       Serial.println(F("Animation IDLE"));
       Animations.IDLE = true;
       ConnectorsStatus.stopEXT = true;
@@ -276,9 +281,9 @@ void displayLoop() {
       ConnectorsStatus.stopEXT = false;
     }
   }
-  break;
-  case GAME_MODE_CAPSULE_BEGIN:{
-    if(!Animations.beginCapsule){
+                     break;
+  case GAME_MODE_CAPSULE_BEGIN: {
+    if (!Animations.beginCapsule) {
       Serial.println(F("Animation"));
       Animations.beginCapsule = true;
       ConnectorsStatus.stopEXT = true;
@@ -289,9 +294,9 @@ void displayLoop() {
       ConnectorsStatus.stopEXT = false;
     }
   }
-  break;
-  case GAME_MODE_CAPSULE_FAIL_READ:{
-    if(!Animations.capsuleFail){
+                              break;
+  case GAME_MODE_CAPSULE_FAIL_READ: {
+    if (!Animations.capsuleFail) {
       Serial.println(F("Animation*"));
       Animations.capsuleFail = true;
       ConnectorsStatus.stopEXT = true;
@@ -302,8 +307,8 @@ void displayLoop() {
       ConnectorsStatus.stopEXT = false;
       delay(20);
     }
-    if(ConnectorsStatus.cylinderTop){ // вытащили капсулу после неудачного чтения
-      if(!Animations.endCapsule){
+    if (ConnectorsStatus.cylinderTop) { // вытащили капсулу после неудачного чтения
+      if (!Animations.endCapsule) {
         Serial.println(F("Animation"));
         Animations.endCapsule = true;
         ConnectorsStatus.stopEXT = true;
@@ -318,7 +323,7 @@ void displayLoop() {
       statusChanged();
     }
   }
-  break;
+                                  break;
   default:
     break;
   }

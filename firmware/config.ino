@@ -33,6 +33,7 @@ void cmdSet_ap_password();
 void cmdSet_levels();
 void printConsoleChar();
 void cmdSet_reboot();
+void cmdSet_rfid();
 
 bool saveConfig();
 
@@ -55,6 +56,7 @@ void serialConsileInit() {
   term.addCommand("ap_password", cmdSet_ap_password);
   term.addCommand("levels", cmdSet_levels);
   term.addCommand("reboot", cmdSet_reboot);
+  term.addCommand("rfid", cmdSet_rfid);
   //Enable Char Echoing
   //term.setSerialEcho(true);
   //Set Post Command Handler
@@ -92,6 +94,7 @@ void cmdHelp() {
   Serial.println(F("\tap_ssid [new value]\t\tAP name."));
   Serial.println(F("\tap_password [new value]\t\tAP password."));
   Serial.println(F("\tlevels [new value]\t\tCout of levels."));
+  Serial.println(F("\trfid\t\tGet RFID data."));
 }
 void cmdSettings() {
   Serial.println(F("Current settings:"));
@@ -165,6 +168,10 @@ void cmdSet_levels() {
 void cmdSet_reboot() {
   delay(500);
   ESP.restart();
+}
+void cmdSet_rfid() {
+  Serial.println(F("RFID"));
+  readRFID();
 }
 
 bool FSInit() {
@@ -264,11 +271,11 @@ void closeFile(File an) {
   an.close();
 }
 
-bool readRFIDFile(){
+bool readRFIDFile() {
   String fileName = String(ConnectorsStatus.RFID);
-  Serial.printf("Read capsule %s\r\n",fileName.c_str());
-  fileName = "/"+fileName;
-  File configFile = SPIFFS.open(fileName+".json", "r");
+  Serial.printf("Read capsule %s\r\n", fileName.c_str());
+  fileName = "/" + fileName;
+  File configFile = SPIFFS.open(fileName + ".json", "r");
   size_t size = configFile.size();
   if (size > 1024) {
     Serial.println(F("Config file size is too large"));

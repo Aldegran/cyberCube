@@ -47,7 +47,7 @@ byte tn(int n) {
   return n;
 }
 void ledLoop() {
-  if (millis() - timers[1] > 10 && mode == 1 && gameMode == 2) {
+  if (millis() - timers[1] > 10 && gameMode == 2) {
     if (n != encoderData.value[2]) {
       showUser(true);
       n = encoderData.value[2];
@@ -60,14 +60,14 @@ void ledLoop() {
   }
 }
 
-void ledFlash(){
+void ledFlash() {
   for (byte i = 0; i < LED_COUNT;i++) strip.setPixelColor(i, ledColors[7]);
   strip.show();
   delay(100);
   eraseLeds();
 }
 
-void ledIDLE(){
+void ledIDLE() {
   eraseLeds();
 }
 
@@ -79,7 +79,11 @@ void setLeds() {
   }
 }
 
-void showUserZero(byte erase){
+void showUserZero(byte erase) {
   n = 0;
   showUser(erase);
+}
+
+void updateStrip() {
+  strip.show();
 }

@@ -18,6 +18,7 @@ typedef struct {
 
 extern byte mode;
 extern byte gameMode;
+extern void setLeds();
 
 displayInfoStruct displayInfo;
 
@@ -157,7 +158,7 @@ void displayGame() {
   case 0:
     gameMode = 1;
     tft.fillScreen(BLACK);
-    setleds();
+    setLeds();
     showUserZero(false);
     break;
 
