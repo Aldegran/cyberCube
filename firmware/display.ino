@@ -35,6 +35,7 @@ extern int userColor(byte n);
 
 int colors[7] = { WHITE, RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA };
 int userColorsList[7] = { RED, YELLOW, GREEN, CYAN, BLUE, MAGENTA, WHITE };
+int currentPerson = 0;
 
 typedef struct {
   byte IDLE;
@@ -83,12 +84,12 @@ void displaySetup() {
   Waveshield.setScreenBrightness(0xFF);
   resetLedCS();
 }
-void showQR(char* qrName) {
-  tft.fillRoundRect(0, 0, WIDTH, WIDTH, 15, WHITE);
+void showQR(String qrName) {
+  tft.fillRoundRect(0, 0, WIDTH, WIDTH, 10, WHITE);
   drawFileMC(qrName, 29, 29, 10, 15, 15, WHITE, BLACK);
 }
-void drawFileMC(char* qrName, int w, int h, byte zoom, int x, int y, int color, int bg) {
-  File file = readFile(qrName);
+void drawFileMC(String qrName, int w, int h, byte zoom, int x, int y, int color, int bg) {
+  File file = readFile(qrName + ".qr");
   if (!file) {
     Serial.printf("Failed to open %s for reading\r\n", qrName);
     return;
@@ -109,6 +110,7 @@ void drawFileMC(char* qrName, int w, int h, byte zoom, int x, int y, int color, 
         }
       }
       tft.fillRect((x + i) * zoom + offsetX, y * zoom + offsetY, zoom, zoom, (b & 0x80) ? color : bg);
+      delay(5);
     }
   }
   closeFile(file);
@@ -123,12 +125,12 @@ void showIntro() {
   tft.drawRect(0, HWIDTH - 20, WIDTH, 40, YELLOW);
   for (int i = 5; i < WIDTH - 5;i += 10) {
     tft.fillRect(i, HWIDTH - 15, 8, 30, GREEN);
-    delay(50);
+    //delay(100);
   }
   tft.fillRect(0, HWIDTH - 47, WIDTH, 17, BLACK);
   tft.setCursor(20, HWIDTH + 40);
   tft.print("Initchializhachiya");
-  delay(2000);
+  //delay(2000);
 
   tft.fillScreen(BLACK);
   tft.fillTriangle(0, 50, WIDTH, 50, HWIDTH, 0, WHITE);
@@ -139,18 +141,27 @@ void showIntro() {
   tft.fillRect(0, 115, WIDTH, 10, WHITE);
   tft.setCursor(1, 140);
   tft.print("Pidgotuyte vashu capsulu do chytuvanna ta natysnyt knopku");
+  tft.fillRect(70, 350, WIDTH - 140, 50, WHITE);
+  tft.fillRect(70, 200, WIDTH - 140, 10, WHITE);
+  tft.drawRect(70, 350, WIDTH - 140, -150, WHITE);
+  tft.drawRect(HWIDTH - 30, 350, 60, -120, YELLOW);
+  tft.fillRect(HWIDTH - 10, 232, 20, 50, BLUE);
+  tft.fillRect(HWIDTH - 59, 250, -10, 40, WHITE);
+  tft.fillRect(HWIDTH + 61, 250, 10, 40, WHITE);
+  tft.fillTriangle(HWIDTH + 75, 290, HWIDTH + 55, 290, HWIDTH + 65, 300, WHITE);
+  tft.fillTriangle(HWIDTH - 75, 290, HWIDTH - 55, 290, HWIDTH - 65, 300, WHITE);
 }
 
-void showCapsule() {
+void showCapsule(bool fast) {
   tft.fillScreen(BLACK);
   tft.setCursor(40, HWIDTH - 35);
   tft.print("Pidgotuvanna");
   tft.drawRect(0, HWIDTH - 20, WIDTH, 40, YELLOW);
   for (int i = 5; i < WIDTH - 5;i += 10) {
     tft.fillRect(i, HWIDTH - 15, 8, 30, BLUE);
-    delay(100);
+    //delay(100);
   }
-  delay(2000);
+  //delay(2000);
 
   tft.fillScreen(BLACK);
   tft.fillRect(0, WIDTH - 50, 110, 10, WHITE);
@@ -162,16 +173,25 @@ void showCapsule() {
   tft.fillRect(100, 0, WIDTH - 200, 10, WHITE);
   tft.drawFastHLine(0, WIDTH, WIDTH, color565(127, 127, 127));
 
+  tft.fillRect(WIDTH - 54, 200, -10, 40, WHITE);
+  tft.fillRect(61, 200, 10, 40, WHITE);
+
+  for (int i = WIDTH - 40; i > 40; i -= 45) {
+    tft.drawRect(115, i, WIDTH - 220, -40, GREEN);
+    if (!fast) delay(50);
+  }
+
+  if (fast) return;
+
   tft.fillTriangle(0, 480, WIDTH, 480, HWIDTH, 440, WHITE);
   tft.fillTriangle(30, 470, WIDTH - 30, 470, HWIDTH, 450, BLACK);
   tft.drawTriangle(0, 480, WIDTH, 480, HWIDTH, 440, YELLOW);
 
+  tft.fillTriangle(75, 200, 55, 200, 65, 190, WHITE);
+  tft.fillTriangle(WIDTH - 70, 200, WIDTH - 50, 200, WIDTH - 60, 190, WHITE);
+
   tft.setCursor(40, 410);
   tft.print("Potribna capsula");
-  for (int i = WIDTH - 40; i > 40; i -= 45) {
-    tft.drawRect(115, i, WIDTH - 220, -40, GREEN);
-    delay(50);
-  }
 }
 
 uint16_t blueColors[6] = {
@@ -198,8 +218,14 @@ void endCapsule(bool status) {
     tft.print("Capsula pogana");
     for (int i = WIDTH - 45; i > 40; i -= 45) {
       tft.fillRect(120, i, WIDTH - 230, -30, RED);
-      delay(300);
     }
+
+    tft.fillTriangle(75, 240, 55, 240, 65, 250, WHITE);
+    tft.fillTriangle(WIDTH - 70, 240, WIDTH - 50, 240, WIDTH - 60, 250, WHITE);
+
+    tft.fillTriangle(75, 200, 55, 200, 65, 190, BLACK);
+    tft.fillTriangle(WIDTH - 70, 200, WIDTH - 50, 200, WIDTH - 60, 190, BLACK);
+
     tft.fillTriangle(0, 430, WIDTH, 430, HWIDTH, 480, WHITE);
     tft.fillTriangle(30, 440, WIDTH - 30, 440, HWIDTH, 470, RED);
     tft.drawTriangle(0, 430, WIDTH, 430, HWIDTH, 480, YELLOW);
@@ -207,7 +233,7 @@ void endCapsule(bool status) {
     tft.print("Vytagnit prystriy");
   } else {
     tft.setCursor(40, WIDTH + 20);
-    tft.print("Capsula godna");
+    tft.print("Capsula dobra");
     byte c = 0;
     for (int i = WIDTH - 45; i > 40; i -= 45) {
       tft.fillRect(120, i, WIDTH - 230, -30, blueColors[c++]);
@@ -215,6 +241,33 @@ void endCapsule(bool status) {
     }
     delay(2000);
   }
+}
+
+void displayOta(int percent) {
+  if (percent < 0) {
+    ConnectorsStatus.stopEXT = true;
+    delay(20);
+    setLedCS();
+    tft.fillScreen(BLACK);
+    tft.setCursor(80, HWIDTH - 35);
+    tft.print("Onovlenna");
+    tft.drawRect(0, HWIDTH - 20, WIDTH, 40, YELLOW);
+    currentPerson = 0;
+  } else {
+    if (percent > currentPerson && percent < 100) {
+      currentPerson = percent;
+      uint16_t color = color565(255 - 2.54 * percent, 2.54 * percent, 0);//color565(100 + 1.5 * percent, 0, 100 + 1.5 * percent);
+      uint16_t px = 3.1 * percent;
+      tft.drawFastVLine(5 + px, HWIDTH - 15, 30, color);
+      tft.drawFastVLine(6 + px, HWIDTH - 15, 30, color);
+      tft.drawFastVLine(7 + px, HWIDTH - 15, 30, color);
+      tft.fillRect(HWIDTH - 25, HWIDTH + 45, 50, -18, BLACK);
+      tft.setCursor(HWIDTH - 20, HWIDTH + 44);
+      tft.print(percent);
+    }
+  }
+  //resetLedCS();
+  //ConnectorsStatus.stopEXT = false;
 }
 
 void displayLoop() {
@@ -231,7 +284,7 @@ void displayLoop() {
     ConnectorsStatus.stopEXT = true;
     setLedCS();
     Waveshield.setScreenBrightness(0xFF);
-    showCapsule();
+    showCapsule(false);
     resetLedCS();
     ConnectorsStatus.stopEXT = false;
     mode = GAME_MODE_WAIT_CAPSULE;
@@ -324,6 +377,8 @@ void displayLoop() {
     }
   }
                                   break;
+  case GAME_MODE_OTA: {
+  }
   default:
     break;
   }

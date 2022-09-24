@@ -29,6 +29,7 @@
 #define GAME_MODE_CAPSULE_GAME_FAIL 12
 #define GAME_MODE_CAPSULE_GAME_OK 13
 #define GAME_MODE_IDLE 15
+#define GAME_MODE_OTA 16
 
 extern void setLeds();
 
@@ -190,45 +191,43 @@ void taskCore0(void* parameter) { //wifi
     //ESP.restart();
   }
   if (WiFi.waitForConnectResult() != WL_CONNECTED) modeAP();
-  ArduinoOTA
-    .onStart([]() {
-    String type;
-    if (ArduinoOTA.getCommand() == U_FLASH)
-      type = "sketch";
-    else // U_SPIFFS
-      type = "filesystem";
-
-    // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-    Serial.println("Start updating " + type);
-      })
+  ArduinoOTA.onStart([]() {
+    mode = GAME_MODE_OTA;
+    statusChanged();
+    displayOta(-1);
+    })
     .onEnd([]() { Serial.println("\nEnd"); })
-        .onProgress([](unsigned int progress, unsigned int total) { Serial.printf("Progress: %u%%\r", (progress / (total / 100))); })
-        .onError([](ota_error_t error) {
-        Serial.printf("Error[%u]: ", error);
-        if (error == OTA_AUTH_ERROR)
-          Serial.println("Auth Failed");
-        else if (error == OTA_BEGIN_ERROR)
-          Serial.println("Begin Failed");
-        else if (error == OTA_CONNECT_ERROR)
-          Serial.println("Connect Failed");
-        else if (error == OTA_RECEIVE_ERROR)
-          Serial.println("Receive Failed");
-        else if (error == OTA_END_ERROR)
-          Serial.println("End Failed");
-          });
+      .onProgress([](unsigned int progress, unsigned int total) {
+      byte p = progress / (total / 100);
+      Serial.printf("Progress: %u%%\r", p);
+      displayOta(p);
+        })
+      .onError([](ota_error_t error) {
+          Serial.printf("Error[%u]: ", error);
+          if (error == OTA_AUTH_ERROR)
+            Serial.println("Auth Failed");
+          else if (error == OTA_BEGIN_ERROR)
+            Serial.println("Begin Failed");
+          else if (error == OTA_CONNECT_ERROR)
+            Serial.println("Connect Failed");
+          else if (error == OTA_RECEIVE_ERROR)
+            Serial.println("Receive Failed");
+          else if (error == OTA_END_ERROR)
+            Serial.println("End Failed");
+        });
 
-      ArduinoOTA.begin();
+        ArduinoOTA.begin();
 
-      Serial.println("Ready");
-      Serial.print("IP address: ");
-      Serial.println(WiFi.localIP());
-      SPIFFS.begin();
-      HTTPserver.addHandler(new SPIFFSEditor(SPIFFS, "admin", "admin"));
-      HTTPserver.begin();
-      for (;;) {
-        ArduinoOTA.handle();
-        consoleLoop();
-      }
+        Serial.println("Ready");
+        Serial.print("IP address: ");
+        Serial.println(WiFi.localIP());
+        SPIFFS.begin();
+        HTTPserver.addHandler(new SPIFFSEditor(SPIFFS, "admin", "admin"));
+        HTTPserver.begin();
+        for (;;) {
+          ArduinoOTA.handle();
+          consoleLoop();
+        }
 }
 
 void taskCore1(void* parameter) { //encoder, led, WS
@@ -273,7 +272,7 @@ void taskCore1(void* parameter) { //encoder, led, WS
       statusChanged();
     }
 
-    if (mode == GAME_MODE_WAIT_CAPSULE && ConnectorsStatus.cylinderTop) { // встувили верх капсулы
+    if (mode == GAME_MODE_WAIT_CAPSULE && ConnectorsStatus.cylinderTop) { // вставили верх капсулы
       mode = GAME_MODE_CAPSULE_BEGIN;
       timers[2] = millis();
       statusChanged();
@@ -392,5 +391,6 @@ void statusChanged() {
   case GAME_MODE_CAPSULE_GAME_FAIL: Serial.println(F("] GAME_MODE_CAPSULE_GAME_FAIL")); break;
   case GAME_MODE_CAPSULE_GAME_OK: Serial.println(F("] GAME_MODE_CAPSULE_GAME_OK")); break;
   case GAME_MODE_IDLE: Serial.println(F("] GAME_MODE_IDLE")); break;
+  case GAME_MODE_OTA: Serial.println(F("] GAME_MODE_OTA")); break;
   }
 }

@@ -263,8 +263,8 @@ void readFileToArray(char* qrName, byte* data) {
   file.close();
 }
 
-File readFile(char* qrName) {
-  return SPIFFS.open(String("/") + String(qrName), "r");
+File readFile(String qrName) {
+  return SPIFFS.open(String("/") + qrName, "r");
 }
 
 void closeFile(File an) {

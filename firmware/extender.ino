@@ -158,6 +158,7 @@ void readConnectors() {
     || mode == GAME_MODE_INIT
     || mode == GAME_MODE_CAPSULE_READ
     || mode == GAME_MODE_WAIT_ANIMATION
+    || mode == GAME_MODE_OTA
     || ConnectorsStatus.stopEXT
     || mode == GAME_MODE_CAPSULE_GAME) return;
   //EXT_Serv.write16(0xFFFF);
@@ -270,7 +271,7 @@ void MBPoints() {
       t[3]++;
       if (t[0] % 10 == 0)t[4] = random(0xff);
       int r = t[3];
-      if (mode != GAME_MODE_WAIT_BUTTON && mode != GAME_MODE_IDLE) r &= ~(1 << 1); /// свет в цилиндре сверху
+      if (mode != GAME_MODE_WAIT_BUTTON && mode != GAME_MODE_IDLE) r &= ~(1 << 1); // свет в цилиндре сверху
       else r |= (1 << 1);
       r = r << 8;
       r += t[4];

@@ -270,34 +270,34 @@ void displayGame() {
         }
       }
       /*if (d <= displayInfo.userRadius) displayInfo.score[0] += displayInfo.score[1] + colorBonus;
-      else displayInfo.score[0] -= displayInfo.score[3];*/
+      else displayInfo.score[0] -= displayInfo.score[3];*/ ///
       displayInfo.score[0] += colorBonus;
       if (displayInfo.score[0] < 0) { //lose
         displayInfo.score[0] = 0;
         drawGame(false);
-        delay(5000);
+        delay(3000);
         gameMode = 4;
         eraseLeds();
-        delay(5000);
-        tft.fillScreen(BLACK);
-        tft.setCursor(100, 100);
-        tft.print("LOSE");
+        delay(2000);
+        showCapsule(true);
+        endCapsule(false);
         resetLedCS();
-        mode = GAME_MODE_CAPSULE_GAME_OK;
+        mode = GAME_MODE_CAPSULE_GAME_FAIL;
         statusChanged();
       }
       if (displayInfo.score[0] > RFIDSettings.maxScore) { //win
         displayInfo.score[0] = RFIDSettings.maxScore;
         drawGame(false);
-        delay(5000);
+        delay(3000);
         gameMode = 3;
         eraseLeds();
-        delay(5000);
-        tft.fillScreen(BLACK);
-        tft.setCursor(100, 100);
-        tft.print("WIN");
+        delay(2000);
+        showQR(ConnectorsStatus.RFID);
+        delay(1000);
+        tft.setCursor(0, WIDTH + 70);
+        tft.print("Zchitayte cey kod swoim prystroim dla zchituvanna kodiv To dae mozhlyvist otrymaty danni");
         resetLedCS();
-        mode = GAME_MODE_CAPSULE_GAME_FAIL;
+        mode = GAME_MODE_CAPSULE_GAME_OK;
       }
       byte currentlevel = map(displayInfo.score[0], 0, RFIDSettings.maxScore, 0, gameSettings.levels);
       if (currentlevel != displayInfo.level) {
