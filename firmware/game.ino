@@ -275,6 +275,7 @@ void displayGame() {
       if (displayInfo.score[0] < 0) { //lose
         displayInfo.score[0] = 0;
         drawGame(false);
+        soundPlay(SOUND_HACKING_FAIL, false);
         delay(3000);
         gameMode = 4;
         eraseLeds();
@@ -283,11 +284,13 @@ void displayGame() {
         endCapsule(false);
         resetLedCS();
         mode = GAME_MODE_CAPSULE_GAME_FAIL;
+        soundPlay(SOUND_BUTTON_WAIT, true);
         statusChanged();
       }
       if (displayInfo.score[0] > RFIDSettings.maxScore) { //win
         displayInfo.score[0] = RFIDSettings.maxScore;
         drawGame(false);
+        soundPlay(SOUND_CALCULATING, false);
         delay(3000);
         gameMode = 3;
         eraseLeds();

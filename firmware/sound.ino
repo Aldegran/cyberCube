@@ -5,7 +5,10 @@ DFRobotDFPlayerMini myDFPlayer;
 
 int notes[75][3] = { {1318,150,150},{1318,300,300},{1318,150,300},{1046,150,150},{1318,300,300},{1568,600,600},{784,600,600},{1046,450,450},{784,150,450},{659,300,450},{880,300,300},{987,150,300},{932,150,150},{880,300,300},{784,210,210},{1318,210,210},{1568,150,150},{1750,300,300},{1396,150,150},{1568,150,300},{1318,300,300},{1046,150,150},{1174,150,150},{987,450,450},{1046,450,450},{784,150,450},{659,300,450},{880,300,300},{987,150,300},{932,150,150},{880,300,300},{784,210,210},{1318,210,210},{1568,150,150},{1750,300,300},{1396,150,150},{1568,150,300},{1318,300,300},{1046,150,150},{1174,150,150},{987,450,600},{1568,150,150},{1480,150,150},{1396,150,150},{1244,300,300},{1318,150,300},{830,150,150},{880,150,150},{1046,150,300},{880,150,150},{1046,150,150},{1174,150,150},{0,0,300},{1568,150,150},{1480,150,150},{1396,150,150},{1244,300,300},{1318,150,300},{2093,300,300},{2093,150,150},{2093,600,600},{1568,150,150},{1480,150,150},{1396,150,150},{1244,300,300},{1318,150,300},{830,150,150},{880,150,150},{1046,150,300},{880,150,150},{1046,150,150},{1174,150,450},{1244,300,450},{1174,450,450},{1046,600,1200} };
 
+
 byte soundInited = false;
+byte isLoop = false;
+
 void soundSetup() {
   ledcAttachPin(BUZZER_PIN, 0);
   MIDIStart();
@@ -14,7 +17,7 @@ void soundSetup() {
   soundInited = true;
   Serial.println(F("DFPlayer init\t[OK]"));
   myDFPlayer.setTimeOut(500);
-  myDFPlayer.volume(5);
+  myDFPlayer.volume(10);
   //soundPlay(1, false);
 }
 
@@ -36,39 +39,37 @@ void printSoundDetail(uint8_t type, int value) {
     Serial.println(F("DFPlayer - Card Online!"));
     break;
   case DFPlayerUSBInserted:
-    Serial.println("DFPlayer - USB Inserted!");
+    Serial.println(F("DFPlayer - USB Inserted!"));
     break;
   case DFPlayerUSBRemoved:
-    Serial.println("DFPlayer - USB Removed!");
+    Serial.println(F("DFPlayer - USB Removed!"));
     break;
   case DFPlayerPlayFinished:
-    Serial.print(F("DFPlayer - Number:"));
-    Serial.print(value);
-    Serial.println(F("DFPlayer -  Play Finished!"));
+    if (!isLoop) Serial.printf("DFPlayer - Number: %d Play Finished!\r\n", value);
     break;
   case DFPlayerError:
-    Serial.print(F("DFPlayer - DFPlayerError:"));
+    Serial.print(F("DFPlayer - DFPlayerError: "));
     switch (value) {
     case Busy:
-      Serial.println(F("DFPlayer - Card not found"));
+      Serial.println(F("Card not found"));
       break;
     case Sleeping:
-      Serial.println(F("DFPlayer - Sleeping"));
+      Serial.println(F("Sleeping"));
       break;
     case SerialWrongStack:
-      Serial.println(F("DFPlayer - Get Wrong Stack"));
+      Serial.println(F("Get Wrong Stack"));
       break;
     case CheckSumNotMatch:
-      Serial.println(F("DFPlayer - Check Sum Not Match"));
+      Serial.println(F("Check Sum Not Match"));
       break;
     case FileIndexOut:
-      Serial.println(F("DFPlayer - File Index Out of Bound"));
+      Serial.println(F("File Index Out of Bound"));
       break;
     case FileMismatch:
-      Serial.println(F("DFPlayer - Cannot Find File"));
+      Serial.println(F("Cannot Find File"));
       break;
     case Advertise:
-      Serial.println(F("DFPlayer - In Advertise"));
+      Serial.println(F("In Advertise"));
       break;
     default:
       break;
@@ -88,13 +89,21 @@ void soundLoop() {
 
 void soundPlay(int sound, byte loop) {
   if (!soundInited) return;
+  isLoop = loop;
   if (loop) myDFPlayer.loop(sound);
   else myDFPlayer.play(sound);
+  Serial.printf("Sound Play: %d %s\r\n", sound, loop ? "[loop]" : "");
 }
 
 void soundStop() {
   if (!soundInited) return;
+  isLoop = false;
   myDFPlayer.pause();
+}
+
+void setVolume(byte v) {
+  if (!soundInited) return;
+  myDFPlayer.volume(v);
 }
 
 void nota(int fr, int d, int d2) {

@@ -31,6 +31,32 @@
 #define GAME_MODE_IDLE 15
 #define GAME_MODE_OTA 16
 
+#define SOUND_SOME 1
+#define SOUND_IDLE 2
+#define SOUND_FAIL 3
+#define SOUND_WAKEUP 4//
+#define SOUND_NOISE 5//
+#define SOUND_ELECTRICAL_NOICE 6
+#define SOUND_CALCULATING 7
+#define SOUND_HACKING 8
+#define SOUND_BUTTON_WAIT 9
+#define SOUND_HACKING_FAIL 10
+#define SOUND_INSERT 11
+/*
+1-1 - апдейт
+2-7 - ожидание
+3-8 - неудача
+4-9 - пробуждение
+5-10 - шипение
+6-11- электрический разряд
+7-12 - вычисление
+8-2 - взлом системы
+9-3 - капсула внутри
+10-4 - неудачный взлом
+11-5 - момент вставки капсулы / извлечения
+12-6
+*/
+
 extern void setLeds();
 
 AsyncWebServer HTTPserver(80);
@@ -89,6 +115,14 @@ typedef struct {
 } __attribute__((packed, aligned(1))) ConnectorsStatusStruct;
 ConnectorsStatusStruct ConnectorsStatus;
 
+typedef struct {
+  byte IDLE;
+  byte beginCapsule;
+  byte endCapsule;
+  byte capsuleFail;
+} __attribute__((packed, aligned(1))) AnimationsStruct;
+AnimationsStruct Animations;
+
 typedef void (*ButtonCallback) ();
 unsigned long timers[3] = { 0, 0, 0 };
 byte gameMode = 0;
@@ -127,9 +161,9 @@ void setup() {
   delay(500);
   xTaskCreatePinnedToCore(taskCore1, "Core1", 10000, NULL, 0, &Task1, 1);
   delay(500);
-  xTaskCreatePinnedToCore(taskCore2, "Core2", 10000, NULL, 0, &Task2, 0);
-  delay(500);
   xTaskCreatePinnedToCore(taskCore3, "Core3", 10000, NULL, 0, &Task3, 1);
+  delay(500);
+  xTaskCreatePinnedToCore(taskCore2, "Core2", 10000, NULL, 0, &Task2, 0);
 }
 
 void taskCore2(void* parameter) { //display
@@ -193,16 +227,20 @@ void taskCore0(void* parameter) { //wifi
   if (WiFi.waitForConnectResult() != WL_CONNECTED) modeAP();
   ArduinoOTA.onStart([]() {
     mode = GAME_MODE_OTA;
+    soundStop();
     statusChanged();
     displayOta(-1);
     })
-    .onEnd([]() { Serial.println("\nEnd"); })
+    .onEnd([]() {
+      soundStop();
+      Serial.println("\nEnd");
+      })
       .onProgress([](unsigned int progress, unsigned int total) {
-      byte p = progress / (total / 100);
-      Serial.printf("Progress: %u%%\r", p);
-      displayOta(p);
+        byte p = progress / (total / 100);
+        Serial.printf("Progress: %u%%\r", p);
+        displayOta(p);
         })
-      .onError([](ota_error_t error) {
+        .onError([](ota_error_t error) {
           Serial.printf("Error[%u]: ", error);
           if (error == OTA_AUTH_ERROR)
             Serial.println("Auth Failed");
@@ -214,7 +252,7 @@ void taskCore0(void* parameter) { //wifi
             Serial.println("Receive Failed");
           else if (error == OTA_END_ERROR)
             Serial.println("End Failed");
-        });
+          });
 
         ArduinoOTA.begin();
 
@@ -289,7 +327,14 @@ void taskCore1(void* parameter) { //encoder, led, WS
     }
     if (mode == GAME_MODE_CAPSULE_BEGIN && ConnectorsStatus.cylinderBottom) { // встравили низ капсулы
       cylinderLight(false);
-      mode = ConnectorsStatus.cylinderStatus ? GAME_MODE_CAPSULE_END : GAME_MODE_CAPSULE_FAIL_READ;
+      if (ConnectorsStatus.cylinderStatus) {
+        mode = GAME_MODE_CAPSULE_END;
+        soundPlay(SOUND_INSERT, false);
+      } else {
+        mode = GAME_MODE_CAPSULE_FAIL_READ;
+        soundPlay(SOUND_FAIL, false);
+      }
+
       statusChanged();
     }
     if (mode == GAME_MODE_CAPSULE_END) {
@@ -331,6 +376,8 @@ void taskCore1(void* parameter) { //encoder, led, WS
     if (mode == GAME_MODE_WAIT_CAPSULE || mode == GAME_MODE_WAIT_BUTTON) {
       if (millis() - timers[2] > IDLE_TIME) { // долго ждали капсулу или кнопку
         mode = GAME_MODE_IDLE;
+        Animations.IDLE = false;
+        soundStop();
         cylinderLight(false);
         statusChanged();
         delay(10);

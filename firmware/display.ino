@@ -37,14 +37,6 @@ int colors[7] = { WHITE, RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA };
 int userColorsList[7] = { RED, YELLOW, GREEN, CYAN, BLUE, MAGENTA, WHITE };
 int currentPerson = 0;
 
-typedef struct {
-  byte IDLE;
-  byte beginCapsule;
-  byte endCapsule;
-  byte capsuleFail;
-} __attribute__((packed, aligned(1))) AnimationsStruct;
-AnimationsStruct Animations;
-
 uint16_t color565(uint8_t r, uint8_t g, uint8_t b) {
   return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | ((b & 0xF8) >> 3);
 }
@@ -80,7 +72,7 @@ void displaySetup() {
   tft.setTextColor(YELLOW, BLACK);
   tft.setCursor(1, 14);
   tft.setTextSize(1);
-  tft.drawCircle(100, 100, 100, WHITE);
+  tft.drawCircle(HWIDTH, HWIDTH, HWIDTH, WHITE);
   Waveshield.setScreenBrightness(0xFF);
   resetLedCS();
 }
@@ -245,22 +237,26 @@ void endCapsule(bool status) {
 
 void displayOta(int percent) {
   if (percent < 0) {
+    soundPlay(SOUND_SOME, true);
     ConnectorsStatus.stopEXT = true;
     delay(20);
     setLedCS();
+    Waveshield.setScreenBrightness(0xFF);
     tft.fillScreen(BLACK);
     tft.setCursor(80, HWIDTH - 35);
     tft.print("Onovlenna");
     tft.drawRect(0, HWIDTH - 20, WIDTH, 40, YELLOW);
     currentPerson = 0;
   } else {
-    if (percent > currentPerson && percent < 100) {
+    if (percent > currentPerson) {
       currentPerson = percent;
-      uint16_t color = color565(255 - 2.54 * percent, 2.54 * percent, 0);//color565(100 + 1.5 * percent, 0, 100 + 1.5 * percent);
-      uint16_t px = 3.1 * percent;
-      tft.drawFastVLine(5 + px, HWIDTH - 15, 30, color);
-      tft.drawFastVLine(6 + px, HWIDTH - 15, 30, color);
-      tft.drawFastVLine(7 + px, HWIDTH - 15, 30, color);
+      if (percent < 100) {
+        uint16_t color = color565(255 - 2.54 * percent, 2.54 * percent, 0);//color565(100 + 1.5 * percent, 0, 100 + 1.5 * percent);
+        uint16_t px = 3.1 * percent;
+        tft.drawFastVLine(4 + px, HWIDTH - 15, 30, color);
+        tft.drawFastVLine(5 + px, HWIDTH - 15, 30, color);
+        tft.drawFastVLine(6 + px, HWIDTH - 15, 30, color);
+      }
       tft.fillRect(HWIDTH - 25, HWIDTH + 45, 50, -18, BLACK);
       tft.setCursor(HWIDTH - 20, HWIDTH + 44);
       tft.print(percent);
@@ -281,6 +277,7 @@ void displayLoop() {
     ConnectorsStatus.stopEXT = false;
     break;
   case GAME_MODE_WAIT_ANIMATION:
+    soundPlay(SOUND_IDLE, true);
     ConnectorsStatus.stopEXT = true;
     setLedCS();
     Waveshield.setScreenBrightness(0xFF);
@@ -295,6 +292,7 @@ void displayLoop() {
     Animations.capsuleFail = false;
     Animations.endCapsule = false;
     Animations.IDLE = false;
+    soundPlay(SOUND_BUTTON_WAIT, true);
     ConnectorsStatus.stopEXT = true;
     delay(20);
     setLedCS();
@@ -307,6 +305,7 @@ void displayLoop() {
     statusChanged();
     break;
   case GAME_MODE_CAPSULE_READ:
+    soundPlay(SOUND_HACKING, true);
     ConnectorsStatus.stopEXT = true;
     delay(20);
     setLedCS();
@@ -323,6 +322,7 @@ void displayLoop() {
     break;
   case GAME_MODE_IDLE: {
     if (!Animations.IDLE) {
+      soundStop();
       Serial.println(F("Animation IDLE"));
       Animations.IDLE = true;
       ConnectorsStatus.stopEXT = true;
@@ -337,7 +337,8 @@ void displayLoop() {
                      break;
   case GAME_MODE_CAPSULE_BEGIN: {
     if (!Animations.beginCapsule) {
-      Serial.println(F("Animation"));
+      soundPlay(SOUND_ELECTRICAL_NOICE, true);
+      Serial.println(F("Animation capsule begin"));
       Animations.beginCapsule = true;
       ConnectorsStatus.stopEXT = true;
       delay(20);
@@ -350,7 +351,8 @@ void displayLoop() {
                               break;
   case GAME_MODE_CAPSULE_FAIL_READ: {
     if (!Animations.capsuleFail) {
-      Serial.println(F("Animation*"));
+      soundPlay(SOUND_FAIL, false);
+      Serial.println(F("Animation capsule end"));
       Animations.capsuleFail = true;
       ConnectorsStatus.stopEXT = true;
       delay(20);

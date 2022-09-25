@@ -34,6 +34,9 @@ void cmdSet_levels();
 void printConsoleChar();
 void cmdSet_reboot();
 void cmdSet_rfid();
+void cmdSet_sound();
+void cmdSet_sound_stop();
+void cmdSet_volume();
 
 bool saveConfig();
 
@@ -57,8 +60,11 @@ void serialConsileInit() {
   term.addCommand("levels", cmdSet_levels);
   term.addCommand("reboot", cmdSet_reboot);
   term.addCommand("rfid", cmdSet_rfid);
+  term.addCommand("sound", cmdSet_sound);
+  term.addCommand("soundStop", cmdSet_sound_stop);
+  term.addCommand("volume", cmdSet_volume);
   //Enable Char Echoing
-  //term.setSerialEcho(true);
+  term.setSerialEcho(true);
   //Set Post Command Handler
   //term.setPostCommandHandler(printConsoleChar);
 }
@@ -95,6 +101,9 @@ void cmdHelp() {
   Serial.println(F("\tap_password [new value]\t\tAP password."));
   Serial.println(F("\tlevels [new value]\t\tCout of levels."));
   Serial.println(F("\trfid\t\tGet RFID data."));
+  Serial.println(F("\tsound [soundId]\t\tPlay sound."));
+  Serial.println(F("\tsoundStop\t\tStop sound."));
+  Serial.println(F("\tvolume [volume]\t\tSet volume."));
 }
 void cmdSettings() {
   Serial.println(F("Current settings:"));
@@ -166,12 +175,27 @@ void cmdSet_levels() {
   saveConfig();
 }
 void cmdSet_reboot() {
+  soundStop();
   delay(500);
   ESP.restart();
 }
 void cmdSet_rfid() {
   Serial.println(F("RFID"));
   readRFID();
+}
+void cmdSet_sound() {
+  int soundNumber = atoi(term.getNext());
+  Serial.printf("Sound %d\r\n", soundNumber);
+  soundPlay(soundNumber, false);
+}
+void cmdSet_sound_stop() {
+  Serial.println(F("Sound stop"));
+  soundStop();
+}
+void cmdSet_volume() {
+  int volumeNumber = atoi(term.getNext());
+  Serial.printf("Volume %d\r\n", volumeNumber);
+  setVolume(volumeNumber);
 }
 
 bool FSInit() {
