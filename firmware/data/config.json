@@ -6,6 +6,7 @@
   "userRadiusDown": 1,
   "lineStepUp": 1,
   "levels": 5,
+  "volume": 10,
   "ssid": "MYSTERIOUS-NEW",
   "password": "0631603132",
   "ap_ssid": "CyberBox",

@@ -7,6 +7,8 @@
 #include <ArduinoOTA.h>
 #include <SPIFFSEditor.h>
 
+#define USE_MIDI false
+
 #define IDLE_TIME 300000
 
 #define LCD_DC 14
@@ -86,6 +88,7 @@ typedef struct {
   int userRadiusDown;
   int lineStepUp;
   int levels;
+  int volume;
 } __attribute__((packed, aligned(1))) GameSettingsStruct;
 GameSettingsStruct gameSettings;
 
@@ -108,6 +111,7 @@ typedef struct {
   byte cylinderStatus;
   byte cylinderConnection;
   byte LCDConnection;
+  byte DFPlayerConnection;
   byte extendersConnection;
   byte stopEXT;
   byte RFIDok;
@@ -127,6 +131,8 @@ typedef void (*ButtonCallback) ();
 unsigned long timers[3] = { 0, 0, 0 };
 byte gameMode = 0;
 byte mode = GAME_MODE_INIT;
+int LCDDelay = 0;
+extern byte inited[6];
 
 void emptyFunction() {}
 ButtonCallback BackButtonCallback = emptyFunction;
@@ -154,16 +160,17 @@ void setup() {
   ConnectorsStatus.cylinderStatus = false;
   ConnectorsStatus.cylinderConnection = false;
   ConnectorsStatus.LCDConnection = false;
+  ConnectorsStatus.DFPlayerConnection = false;
   ConnectorsStatus.extendersConnection = false;
   ConnectorsStatus.stopEXT = false;
   ConnectorsStatus.RFIDok = false;
-  xTaskCreatePinnedToCore(taskCore0, "Core0", 10000, NULL, 0, &Task0, 0);
+  xTaskCreatePinnedToCore(taskCore3, "Core3", 10000, NULL, 0, &Task3, 1); //sound
   delay(500);
-  xTaskCreatePinnedToCore(taskCore1, "Core1", 10000, NULL, 0, &Task1, 1);
+  xTaskCreatePinnedToCore(taskCore0, "Core0", 10000, NULL, 0, &Task0, 0); //wifi
   delay(500);
-  xTaskCreatePinnedToCore(taskCore3, "Core3", 10000, NULL, 0, &Task3, 1);
+  xTaskCreatePinnedToCore(taskCore1, "Core1", 10000, NULL, 0, &Task1, 1); //encoder, led, WS
   delay(500);
-  xTaskCreatePinnedToCore(taskCore2, "Core2", 10000, NULL, 0, &Task2, 0);
+  xTaskCreatePinnedToCore(taskCore2, "Core2", 10000, NULL, 0, &Task2, 0); //display
 }
 
 void taskCore2(void* parameter) { //display
@@ -188,6 +195,7 @@ void taskCore2(void* parameter) { //display
   for (;;) {
 
     if (mode == GAME_MODE_CONNECT_BOX && ConnectorsStatus.LCDConnection == 2) {
+      delay(LCDDelay);
       ConnectorsStatus.stopEXT = true;
       displaySetup();
       ConnectorsStatus.stopEXT = false;
@@ -285,18 +293,25 @@ void taskCore1(void* parameter) { //encoder, led, WS
     }
     if (mode == GAME_MODE_CONNECT_TOP) { // подключили верх
       if (!setupBoxExtenders()) {
-        delay(1000);
+        delay(5000);
         if (!ConnectorsStatus.cylinderConnection) { // сняли верх
           mode = GAME_MODE_START;
           statusChanged();
         }
       } else {
-        ;
         mode = GAME_MODE_CONNECT_BOX;
         cylinderLight(false);
         statusChanged();
       }
     }
+    /*if (mode == GAME_MODE_CONNECT_BOX && ConnectorsStatus.cylinderStatus == false) { //поменяли коннектор
+      inited[0] = false;
+      inited[2] = false;
+      inited[3] = false;
+      inited[4] = false;
+      mode = GAME_MODE_CONNECT_TOP;
+      statusChanged();
+    }*/
     if (mode == GAME_MODE_CONNECT_BOX && ConnectorsStatus.LCDConnection == true) {
       mode = GAME_MODE_CONNECT_LCD;
       statusChanged();

@@ -29,8 +29,8 @@ void RFIDSetup() {
   }
   mfrc522.PCD_SetAntennaGain(mfrc522.RxGain_max);
   //if (mfrc522.PCD_GetAntennaGain()) {
-    Serial.print(F("RFID init\t[OK]\t"));
-    mfrc522.PCD_DumpVersionToSerial();
+  Serial.print(F("RFID init\t[OK]\t"));
+  mfrc522.PCD_DumpVersionToSerial();
   //} else Serial.println("RFID init\t[FAIL]");
   resetRFIDCS();
 }

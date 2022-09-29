@@ -25,6 +25,7 @@ void EXTButtonInterrupt() {
 
 void setupExtender() {
   Wire.begin();
+  delay(1500);
   Wire.beginTransmission(RFID_WIRE);
   if (Wire.endTransmission() != 0) {
     Serial.println(F("EXT_RFID init\t[FAIL]"));
@@ -199,6 +200,8 @@ void readConnectors() {
   } else if (ConnectorsStatus.LCDConnection) {
     ConnectorsStatus.LCDConnection = false;
     Serial.println(F("Connect: DISCONECT LCDConnection"));
+  } else {
+    LCDDelay = 20000;
   }
   if (!(v >> 8 & (1 << 0))) {
     if (!ConnectorsStatus.cylinderBottom) {
