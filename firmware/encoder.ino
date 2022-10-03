@@ -51,7 +51,7 @@ void encoderLoop() {
   currentEncoder[2] = encoder2.getCount();
   for (byte i = 0; i < 3; i++) {
     if (currentEncoder[i] != encoderData.value[i]) {
-      //Serial.printf("%d = %d\r\n", i, currentEncoder[i]);
+      Serial.printf("%d = %d\r\n", i, currentEncoder[i]);
       if (currentEncoder[i] < encoderLimit[i][0]) {
         encoderData.value[i] = encoderLimit[i][i == 2 ? 1 : 0];
         setCount(i, encoderData.value[i]);

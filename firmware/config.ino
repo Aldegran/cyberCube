@@ -35,8 +35,10 @@ void cmdSet_reboot();
 void cmdSet_rfid();
 void cmdSet_sound();
 void cmdSet_sound_stop();
+void cmdSet_sound_reset();
 void cmdSet_volume();
 void cmdShow_QR();
+void cmdShow_melody();
 
 bool saveConfig();
 
@@ -64,8 +66,10 @@ void serialConsileInit() {
   SerialTerminalAddCommand("rfid", cmdSet_rfid);
   SerialTerminalAddCommand("sound", cmdSet_sound);
   SerialTerminalAddCommand("soundStop", cmdSet_sound_stop);
+  SerialTerminalAddCommand("soundReset", cmdSet_sound_reset);
   SerialTerminalAddCommand("volume", cmdSet_volume);
   SerialTerminalAddCommand("showQR", cmdShow_QR);
+  SerialTerminalAddCommand("melody", cmdSet_melody);
   //Enable Char Echoing
   SerialTerminalSetSerialEcho(true);
   //Set Post Command Handler
@@ -137,8 +141,10 @@ void cmdSettings() {
   Serial.printf("\tEXT_Serv - \t\t[%s]\r\n", inited[5] ? "OK" : "FAIL");
   Serial.printf("\tEXT_RFID - \t\t[%s]\r\n", inited[1] ? "OK" : "FAIL");
   Serial.printf("\tLCDConnection - \t%d\r\n", ConnectorsStatus.LCDConnection);
-  Serial.printf("\tCurrent mode - \t\t");
+  Serial.print("\tCurrent mode - \t\t");
   statusChanged();
+  int v = voltage();
+  Serial.printf("\tVoltage - \t\t%d%s [%fV] %d\r\n", voltagePersent(v), "%", voltageValue(v), v);
 }
 void cmdSet_lineColorChanceUp() {
   gameSettings.lineColorChanceUp = atoi(SerialTerminalGetNext());
@@ -220,6 +226,10 @@ void cmdSet_sound() {
   Serial.printf("Sound %d\r\n", soundNumber);
   soundPlay(soundNumber, false);
 }
+void cmdSet_melody() {
+  Serial.println(F("Melody"));
+  MIDIPlayMelody();
+}
 void cmdSet_sound_stop() {
   Serial.println(F("Sound stop"));
   soundStop();
@@ -229,6 +239,10 @@ void cmdSet_volume() {
   Serial.printf("Volume %d\r\n", gameSettings.volume);
   setVolume(gameSettings.volume);
   saveConfig();
+}
+void cmdSet_sound_reset() {
+  Serial.println(F("Sound Reset"));
+  soundReset();
 }
 
 bool FSInit() {

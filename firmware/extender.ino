@@ -1,7 +1,7 @@
 #include "PCF8575.h"
 #include "Wire.h"
 
-#define RFID_WIRE 0x19
+#define SERVICE_WIRE 0x19
 
 PCF8575 EXT_Led0(0x20);
 PCF8575 EXT_Serv(0x21);
@@ -26,21 +26,21 @@ void EXTButtonInterrupt() {
 void setupExtender() {
   Wire.begin();
   delay(1500);
-  Wire.beginTransmission(RFID_WIRE);
+  Wire.beginTransmission(SERVICE_WIRE);
   if (Wire.endTransmission() != 0) {
     Serial.println(F("EXT_RFID init\t[FAIL]"));
   } else {
-    Wire.beginTransmission(RFID_WIRE);
-    Wire.write('A');
-    Wire.endTransmission();
-    Wire.requestFrom(RFID_WIRE, 1);
-    byte c = Wire.read();
+    delay(5);
+    byte c = getByteService(0x05);
     //Serial.println(c);
-    if (c != 'A') {
-      Serial.println(F("EXT_RFID connect\t[FAIL]"));
+    if (c != 0x05) {
+      Serial.printf("EXT_RFID connect\t[FAIL] %d\r\n", c);
     } else {
       inited[1] = true;
       Serial.println(F("EXT_RFID init\t[OK]"));
+      setVolume(gameSettings.volume * 1);
+      delay(50);
+      ConnectorsStatus.DFPlayerConnection = getByteService(0x10) ? true : false;
     }
   }
   if (!EXT_Serv.begin()) {
@@ -215,7 +215,7 @@ void readConnectors() {
   /*if(v != 0xFFFF){
     Serial.println(v, BIN);
   }*/
-  if (mode == GAME_MODE_START && random(50) == 2) {
+  if (mode == GAME_MODE_START && random(50) == 2 && USE_FLASHES) {
     EXT_Serv.write(15, false);
     delay(50);
     EXT_Serv.write(15, true);
@@ -331,18 +331,18 @@ bool readRFID() {
   ConnectorsStatus.RFIDok = false;
   ConnectorsStatus.RFID = String();
 
-  if (getByteRFID(0x01) == 1) {
-    if (getByteRFID(0x02) == 1) {
-      byte size = getByteRFID(0x03);
+  if (getByteService(0x01) == 1) {
+    if (getByteService(0x02) == 1) {
+      byte size = getByteService(0x03);
       if (!size || size == 0xFF) {
         Serial.println();
         return false;
       }
       Serial.printf("size: %d\r\nuid: ", size);
-      Wire.beginTransmission(RFID_WIRE);
+      Wire.beginTransmission(SERVICE_WIRE);
       Wire.write(0x04);
       Wire.endTransmission();
-      Wire.requestFrom(RFID_WIRE, size);
+      Wire.requestFrom(SERVICE_WIRE, size);
       byte rfidBufIndex = 0;
 
       while (Wire.available()) {
@@ -356,7 +356,7 @@ bool readRFID() {
         rfidBufIndex++;
       }
       Serial.println(ConnectorsStatus.RFID);
-      getByteRFID(0x01);
+      getByteService(0x01);
       ConnectorsStatus.RFIDok = true;
       return true;
     }
@@ -364,15 +364,85 @@ bool readRFID() {
   return false;
 }
 
-byte getByteRFID(byte a) {
-  Wire.beginTransmission(RFID_WIRE);
-  Wire.write(a);
+void soundPlay(int sound, byte loop) {
+  get2ByteService(loop ? 0x13 : 0x12, sound);
+  Serial.printf("Sound Play: %d %s\r\n", sound, loop ? "[loop]" : "");
+}
+
+void soundStop() {
+  getByteService(0x14);
+}
+
+void setVolume(byte v) {
+  get2ByteService(0x11, v);
+}
+
+void soundReset() {
+  getByteService(0x15);
+  delay(5);
+  setVolume(gameSettings.volume * 1);
+}
+
+int voltage() {
+  Wire.beginTransmission(SERVICE_WIRE);
+  Wire.write(0x20);
   Wire.endTransmission();
-  Wire.requestFrom(RFID_WIRE, 1);
+  Wire.requestFrom(SERVICE_WIRE, 1);
   uint64_t tt = millis();
   while (!Wire.available()) {
     delay(1);
-    if (millis() - tt > 100) break;
+    if (millis() - tt > 100) {
+      Serial.println("ERROR I2C timeout");
+      return 0;
+    }
+  }
+  int res = Wire.read() << 8;
+  res += Wire.read();
+  if (res < 417) return 0;
+  return res;
+}
+
+byte voltagePersent(int v) {
+  if (!v) return 0;
+  return map(v, 417, 644, 0, 100);
+}
+
+float voltageValue(int v) {
+  if (!v) return 0;
+  return (float(v - 417) * 1.50 / 227.00) + 2.70;
+}
+
+byte getByteService(byte a) {
+  Wire.beginTransmission(SERVICE_WIRE);
+  Wire.write(a);
+  Wire.endTransmission();
+  Wire.requestFrom(SERVICE_WIRE, 1);
+  uint64_t tt = millis();
+  while (!Wire.available()) {
+    delay(1);
+    if (millis() - tt > 100) {
+      Serial.println("ERROR I2C timeout");
+      break;
+    }
+  }
+  return Wire.read();
+}
+
+byte get2ByteService(byte a, byte b) {
+  byte bb[2];
+  bb[0] = a;
+  bb[1] = b;
+  Wire.beginTransmission(SERVICE_WIRE);
+  Wire.write(bb, 2);
+  Wire.endTransmission();
+  Wire.requestFrom(SERVICE_WIRE, 1);
+  uint64_t tt = millis();
+  while (!Wire.available()) {
+    delay(1);
+    if (millis() - tt > 100) {
+      Serial.println("ERROR I2C timeout");
+      break;
+    }
   }
   return Wire.read();
 }

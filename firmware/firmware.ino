@@ -7,7 +7,8 @@
 #include <ArduinoOTA.h>
 #include <SPIFFSEditor.h>
 
-#define USE_MIDI false
+#define USE_MIDI true
+#define USE_FLASHES true
 
 #define IDLE_TIME 300000
 
@@ -25,6 +26,7 @@
 #define GAME_MODE_WAIT_CAPSULE 6
 #define GAME_MODE_CAPSULE_BEGIN 7
 #define GAME_MODE_CAPSULE_END 8
+#define GAME_MODE_CAPSULE_END_WAIT 17
 #define GAME_MODE_CAPSULE_READ 9
 #define GAME_MODE_CAPSULE_FAIL_READ 10
 #define GAME_MODE_CAPSULE_GAME 11
@@ -164,8 +166,6 @@ void setup() {
   ConnectorsStatus.extendersConnection = false;
   ConnectorsStatus.stopEXT = false;
   ConnectorsStatus.RFIDok = false;
-  xTaskCreatePinnedToCore(taskCore3, "Core3", 10000, NULL, 0, &Task3, 1); //sound
-  delay(500);
   xTaskCreatePinnedToCore(taskCore0, "Core0", 10000, NULL, 0, &Task0, 0); //wifi
   delay(500);
   xTaskCreatePinnedToCore(taskCore1, "Core1", 10000, NULL, 0, &Task1, 1); //encoder, led, WS
@@ -282,9 +282,11 @@ void taskCore1(void* parameter) { //encoder, led, WS
   encoderSetup();
   setupExtender();
   ledSetup();
+  MIDISetup();
   mode = GAME_MODE_START;
   statusChanged();
   for (;;) {
+    someNoise();
     if (mode != GAME_MODE_IDLE) extenderLoop();
     if (mode == GAME_MODE_START && ConnectorsStatus.cylinderConnection) { // надели верх
       mode = GAME_MODE_CONNECT_TOP;
@@ -341,16 +343,21 @@ void taskCore1(void* parameter) { //encoder, led, WS
       statusChanged();
     }
     if (mode == GAME_MODE_CAPSULE_BEGIN && ConnectorsStatus.cylinderBottom) { // встравили низ капсулы
-      cylinderLight(false);
+      mode = GAME_MODE_CAPSULE_END_WAIT;
+      timers[2] = millis();
+      statusChanged();
+    }
+    if (mode == GAME_MODE_CAPSULE_END_WAIT) { // встравили низ капсулы
       if (ConnectorsStatus.cylinderStatus) {
+        cylinderLight(false);
         mode = GAME_MODE_CAPSULE_END;
+        statusChanged();
         soundPlay(SOUND_INSERT, false);
-      } else {
+      } else if (millis() - timers[2] > 5000) {
         mode = GAME_MODE_CAPSULE_FAIL_READ;
         soundPlay(SOUND_FAIL, false);
+        statusChanged();
       }
-
-      statusChanged();
     }
     if (mode == GAME_MODE_CAPSULE_END) {
       for (byte i = 0; i < 10;i++) {
@@ -377,10 +384,10 @@ void taskCore1(void* parameter) { //encoder, led, WS
       statusChanged();
     }
 
-    if (mode == GAME_MODE_CAPSULE_GAME) { // игра
-      ledLoop();
-      encoderLoop();
-    }
+    //if (mode == GAME_MODE_CAPSULE_GAME) { // игра
+    //  ledLoop();
+    encoderLoop();
+    //}
     if (mode == GAME_MODE_CAPSULE_GAME_OK || mode == GAME_MODE_CAPSULE_GAME_FAIL) { // после игры
       if (ConnectorsStatus.cylinderTop) { //ждём пока вытащит
         mode = GAME_MODE_CONNECT_LCD;
@@ -412,15 +419,6 @@ void taskCore1(void* parameter) { //encoder, led, WS
   }
 }
 
-void taskCore3(void* parameter) { //sound
-  Serial.print(F("<<< Task3 running on core "));
-  Serial.println(xPortGetCoreID());
-  soundSetup();
-  for (;;) {
-    soundLoop();
-  }
-}
-
 void loop() {
   vTaskDelete(NULL);
 }
@@ -447,6 +445,7 @@ void statusChanged() {
   case GAME_MODE_WAIT_CAPSULE: Serial.println(F("] GAME_MODE_WAIT_CAPSULE")); break;
   case GAME_MODE_CAPSULE_BEGIN: Serial.println(F("] GAME_MODE_CAPSULE_BEGIN")); break;
   case GAME_MODE_CAPSULE_END: Serial.println(F("] GAME_MODE_CAPSULE_END")); break;
+  case GAME_MODE_CAPSULE_END_WAIT: Serial.println(F("] GAME_MODE_CAPSULE_END_WAIT")); break;
   case GAME_MODE_CAPSULE_READ: Serial.println(F("] GAME_MODE_CAPSULE_READ")); break;
   case GAME_MODE_CAPSULE_FAIL_READ: Serial.println(F("] GAME_MODE_CAPSULE_FAIL_READ")); break;
   case GAME_MODE_CAPSULE_GAME: Serial.println(F("] GAME_MODE_CAPSULE_GAME")); break;
